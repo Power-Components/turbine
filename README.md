@@ -38,41 +38,78 @@ composer require power-components/turbine
 Everything a front-end needs is described in PHP with the `Turbine` builder. Point it at a datasource, declare fields, columns and filters, feed it the request, and return the envelope:
 
 ```php
-use Illuminate\Http\Request;
-use PowerComponents\Turbine\{Button, Column, Fields};
-use PowerComponents\Turbine\Components\Filters\{FilterInputText, FilterSelect};
+use PowerComponents\Turbine\Button;
+use PowerComponents\Turbine\Column;
+use PowerComponents\Turbine\Components\Rules\RuleActions;
+use PowerComponents\Turbine\Fields;
 use PowerComponents\Turbine\Turbine;
 
 class UserGridController
 {
-    public function __invoke(Request $request)
+    public function __invoke(Request $request): Response
+    {
+        return Inertia::render('users', [
+            'columns' => fn () => $this->columns(),
+            'grid' => fn () => $this->turbine($request)->toArray(),
+        ]);
+    }
+
+    private function fields()
+    {
+        return (new Fields())
+            ->add('id')
+            ->add('name')
+            ->add('email');
+    }
+
+    /**
+     * @return array<int, Column>
+     */
+    private function columns(): array
+    {
+        return [
+            Column::make('ID', 'id')->sortable(),
+            Column::make('Name', 'name')->searchable()->sortable(),
+            Column::make('Email', 'email')->searchable()->sortable(),
+        ];
+    }
+
+    /**
+     * @return array<int, Button>
+     */
+    private function actions(User $user): array
+    {
+        return [
+            Button::add('view')
+                ->slot('View')
+                ->route('users.show', ['user' => $user->id]),
+        ];
+    }
+
+    /**
+     * @return array<int, RuleActions>
+     */
+    private function actionsRules(User $user): array
+    {
+        return [
+            (new RuleActions('view'))->when(fn ($r) => $r->id % 2 === 0)->hide(),
+            (new RuleActions('view'))->when(fn ($r) => $r->id === 1)->setAttribute('disabled', 'disabled'),
+        ];
+    }
+
+    private function turbine(Request $request): Turbine
     {
         return Turbine::make()
             ->datasource(fn () => User::query())
-            ->fields((new Fields())
-                ->add('id')
-                ->add('name')
-                ->add('email')
-                ->add('created_at', fn ($user) => $user->created_at->format('d/m/Y')))
-            ->columns([
-                Column::make('ID', 'id')->sortable(),
-                Column::make('Name', 'name')->searchable()->sortable(),
-                Column::make('Email', 'email')->searchable(),
-                Column::make('Created', 'created_at')->sortable(),
-            ])
-            ->filters([
-                new FilterInputText('name'),
-                new FilterSelect('status', 'status'),
-            ])
-            ->actions(fn ($user) => [
-                Button::add('edit')->slot('Edit')->route('users.edit', ['user' => $user->id]),
-                Button::add('delete')->slot('Delete')->dispatch('deleteUser', ['id' => $user->id])->confirm('Delete this user?'),
-            ])
+            ->fields($this->fields())
+            ->columns(fn () => $this->columns())
+            ->filters([])
+            ->actions(fn (User $user) => $this->actions($user))
+            ->actionRules(fn (User $user) => $this->actionsRules($user))
             ->tableName('users')
             ->primaryKey('id')
-            ->perPage(15)
-            ->fromRequest($request)
-            ->toResponse();          // Illuminate\Http\JsonResponse
+            ->perPage(10)
+            ->fromRequest($request);
     }
 }
 ```
