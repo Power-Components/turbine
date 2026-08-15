@@ -1,0 +1,6 @@
+vendor
+.env
+.phpunit.cache
+composer.lock
+.junie
+.idea

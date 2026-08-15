@@ -1,0 +1,24 @@
+<?php
+
+namespace PowerComponents\Turbine\DataSource\Support;
+
+use PowerComponents\Turbine\Components\Filters\FilterInputText;
+
+trait InputOperators
+{
+    /** @param  array<string, mixed>  $filter */
+    public function validateInputTextOptions(array $filter, string $field): string
+    {
+        /** @var array<int, string>|string $selected */
+        $selected = data_get($filter, "input_text_options.$field");
+
+        if (is_array($selected)) {
+            $selected = collect($selected)->values()[0];
+        }
+
+        return in_array(strval(
+            $selected
+        ), FilterInputText::getInputTextOperators()) ?
+            strval($selected) : 'contains';
+    }
+}
