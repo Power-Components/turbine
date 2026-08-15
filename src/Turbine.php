@@ -177,10 +177,18 @@ final class Turbine
      */
     public function fromRequest(Request $request, string $key = 'powergrid'): self
     {
-        /** @var array<string, mixed> $payload */
-        $payload = (array) ($request->input($key) ?? $request->input('powergrid') ?? $request->input('turbine') ?? []);
+        $flatKeys = ['search', 'sortField', 'sortDirection', 'filters', 'sortArray', 'softDeletes', 'filterBuilder'];
+        $flat = [];
+        foreach ($flatKeys as $flatKey) {
+            if ($request->has($flatKey)) {
+                $flat[$flatKey] = $request->input($flatKey);
+            }
+        }
 
-        $this->requestState = $payload;
+        /** @var array<string, mixed> $nested */
+        $nested = (array) ($request->input($key) ?? $request->input('powergrid') ?? $request->input('turbine') ?? []);
+
+        $this->requestState = array_merge($flat, $nested);
 
         return $this;
     }
