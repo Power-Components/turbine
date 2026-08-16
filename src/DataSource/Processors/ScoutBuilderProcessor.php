@@ -16,6 +16,15 @@ class ScoutBuilderProcessor extends DataSourceBase
         return $key instanceof ScoutBuilder;
     }
 
+    public function resolveTable(mixed $datasource): ?string
+    {
+        if (is_object($datasource) && property_exists($datasource, 'model') && is_object($datasource->model) && method_exists($datasource->model, 'getTable')) {
+            return $datasource->model->getTable();
+        }
+
+        return parent::resolveTable($datasource);
+    }
+
     /**
      * @param  array<string, mixed>  $properties
      * @return array{results: mixed}

@@ -1,5 +1,7 @@
 <?php
 
+namespace PowerComponents\Turbine\Tests\Feature;
+
 use PowerComponents\Turbine\Plugins\FilterBuilder\FilterBuilderValidator;
 
 it('returns supported operators by type', function () {

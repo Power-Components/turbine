@@ -1,5 +1,7 @@
 <?php
 
+namespace PowerComponents\Turbine\Tests\Feature;
+
 use PowerComponents\Turbine\DataSource\Support\{FilterNormalizer, InputOperators, Sql};
 
 class TestInputOperatorsFeatureClass
@@ -95,7 +97,7 @@ it('generates sort SQL by database driver using Sql helper', function () {
 
 it('throws exception when getSortSqlByDriver receives empty arguments', function () {
     Sql::getSortSqlByDriver('', 'mysql', '8.0');
-})->throws(Exception::class, 'sortField, driverName and driverVersion must be informed');
+})->throws(\Exception::class, 'sortField, driverName and driverVersion must be informed');
 
 it('returns correct like syntax per driver', function () {
     expect(Sql::like(null))->toBe('LIKE');

@@ -1,5 +1,7 @@
 <?php
 
+namespace PowerComponents\Turbine\Tests\Feature;
+
 use PowerComponents\Turbine\Components\Rules\{
     RuleActions,
     RuleCheckbox,
@@ -49,7 +51,7 @@ it('throws exception if multiple conditions are set on RuleActions', function ()
     $rule = new RuleActions('edit');
     $rule->when(fn () => true);
     $rule->unless(fn () => false);
-})->throws(InvalidArgumentException::class, 'A rule must have only one condition.');
+})->throws(\InvalidArgumentException::class, 'A rule must have only one condition.');
 
 it('configures RuleRows modifiers and loop conditions', function () {
     $rule = new RuleRows();

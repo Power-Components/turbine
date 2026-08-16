@@ -5,6 +5,8 @@ namespace PowerComponents\Turbine;
 use Closure;
 use Illuminate\Http\{JsonResponse, Request};
 use PowerComponents\Turbine\Components\Filters\FilterBase;
+use PowerComponents\Turbine\Contracts\DataSourceProcessor;
+use PowerComponents\Turbine\DataSource\DataSourceManager;
 use PowerComponents\Turbine\Support\State\{ArrayGridContext, State};
 
 /**
@@ -67,6 +69,12 @@ final class Turbine
     public static function make(): self
     {
         return new self();
+    }
+
+    /** @param class-string<DataSourceProcessor> $processorClass */
+    public static function registerDataSource(string $processorClass, bool $prepend = true): void
+    {
+        app(DataSourceManager::class)->register($processorClass, $prepend);
     }
 
     /**

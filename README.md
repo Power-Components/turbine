@@ -270,14 +270,95 @@ Other descriptor fields: `id` (the action name), `label`, `icon`, `tag`, `visibl
 
 ### Conditional rules
 
-Use `actionRules()` to hide, disable or tweak an action per row; the outcome is folded into `visible` / `disabled` / attributes before it reaches the client:
+Rules allow server-side conditional logic applied per row, action button, or cell element before sending the JSON envelope to the client.
+
+#### 1. Action Rules (`RuleActions`)
+Modify, hide, disable, or redirect action buttons dynamically per row:
 
 ```php
 use PowerComponents\Turbine\Components\Rules\RuleActions;
 
-->actionRules(fn (User $user) => [
-    (new RuleActions('delete'))->when(fn (User $u) => $u->is_admin)->hide(),
-])
+Turbine::make()
+    ->actionRules(fn (User $user) => [
+        // Hide delete button for admin users
+        (new RuleActions('delete'))
+            ->when(fn (User $u) => $u->is_admin)
+            ->hide(),
+
+        // Disable edit button for inactive users
+        (new RuleActions('edit'))
+            ->when(fn (User $u) => ! $u->is_active)
+            ->disable(),
+
+        // Override button label / slot
+        (new RuleActions('view'))
+            ->when(fn (User $u) => $u->is_vip)
+            ->slot('VIP Profile'),
+
+        // Set custom HTML or CSS attributes
+        (new RuleActions('delete'))
+            ->when(fn (User $u) => $u->has_warnings)
+            ->setAttribute('class', 'bg-red-500 text-white'),
+
+        // Override action event to redirect
+        (new RuleActions('show'))
+            ->when(fn (User $u) => $u->is_external)
+            ->redirect('https://external-system.test/user/' . $user->id),
+    ]);
+```
+
+#### 2. Row Rules (`RuleRows`)
+Apply styling, attributes, or detail views to entire table rows:
+
+```php
+use PowerComponents\Turbine\Components\Rules\RuleRows;
+
+Turbine::make()
+    ->actionRules(fn (User $user) => [
+        // Highlight rows matching condition
+        (new RuleRows())
+            ->when(fn (User $u) => $u->is_admin)
+            ->setAttribute('class', 'bg-blue-50 font-bold'),
+
+        // Set custom expanded row detail view
+        (new RuleRows())
+            ->when(fn (User $u) => $u->has_details)
+            ->detailView('users.details-panel', ['user' => $user->id]),
+
+        // Helper loop conditions for zebra striping or page positions
+        (new RuleRows())->alternating()->setAttribute('class', 'bg-gray-50'),
+        (new RuleRows())->firstOnPage()->setAttribute('class', 'border-t-2 border-primary'),
+        (new RuleRows())->lastOnPage()->setAttribute('class', 'border-b-2 border-primary'),
+    ]);
+```
+
+#### 3. Selection & Element Rules
+Control selection checkboxes, radio buttons, toggleable cells, or inline edit cells:
+
+```php
+use PowerComponents\Turbine\Components\Rules\{RuleCheckbox, RuleRadio, RuleToggleable, RuleEditOnClick};
+
+// Checkbox selection rule
+(new RuleCheckbox())
+    ->when(fn (User $u) => $u->is_system_user)
+    ->disable()
+    ->hide()
+    ->applyRowClasses('non-selectable');
+
+// Radio selection rule
+(new RuleRadio())
+    ->when(fn (User $u) => ! $u->is_active)
+    ->disable();
+
+// Toggleable column cell rule
+(new RuleToggleable('is_active'))
+    ->when(fn (User $u) => $u->is_protected)
+    ->hide();
+
+// Edit-on-click cell rule
+(new RuleEditOnClick('name'))
+    ->when(fn (User $u) => $u->is_locked)
+    ->disable();
 ```
 
 ## Building blocks
@@ -289,15 +370,255 @@ All of these live in the core namespace `PowerComponents\Turbine\`:
 - **`Components\Filters\*`** — `FilterInputText`, `FilterSelect`, `FilterMultiSelect`, `FilterNumber`, `FilterBoolean`, `FilterDatePicker`, `FilterDateTimePicker`, `FilterEnumSelect`.
 - **`Button`** — the action DSL described above.
 
+### Search & Relation Search
+
+Global search filters records across all columns configured with `->searchable()`:
+
+```php
+Column::make('Name', 'name')->searchable(),
+Column::make('Email', 'email')->searchable(),
+```
+
+#### Search across relationships
+Use `relationSearch()` to allow global search across Eloquent relations:
+
+```php
+Turbine::make()
+    ->datasource(fn () => User::query())
+    ->columns($columns)
+    ->relationSearch([
+        'category' => ['name', 'slug'],
+        'profile'  => ['bio', 'phone'],
+    ]);
+```
+
+### Filter Options
+
+Turbine includes a complete suite of filter components located in `PowerComponents\Turbine\Components\Filters\*`. Filters can be passed directly as an array or instantiated via `FilterManager`.
+
+#### 1. Input Text (`FilterInputText`)
+Filters text fields with configurable search operators (`contains`, `starts_with`, `ends_with`, `exact`):
+
+```php
+use PowerComponents\Turbine\Components\Filters\FilterInputText;
+
+new FilterInputText('name', 'users.name')
+    ->operators(['contains', 'starts_with', 'exact'])
+    ->placeholder('Search by name...')
+    ->default('John');
+```
+
+#### 2. Select & Enum Select (`FilterSelect`, `FilterEnumSelect`)
+Single selection filter backed by a collection, array, or PHP Enum:
+
+```php
+use PowerComponents\Turbine\Components\Filters\{FilterSelect, FilterEnumSelect};
+
+// Standard collection or array source
+new FilterSelect('status')
+    ->dataSource(collect([
+        ['id' => 'active', 'name' => 'Active'],
+        ['id' => 'pending', 'name' => 'Pending'],
+    ]))
+    ->optionValue('id')
+    ->optionLabel('name')
+    ->depends(['country_id']); // Re-evaluates when parent filter changes
+
+// PHP Enum source (auto-detects labelTurbineFilter() or Enum value)
+new FilterEnumSelect('status')
+    ->dataSource(UserStatusEnum::cases());
+```
+
+#### 3. Multi-Select & Async Multi-Select (`FilterMultiSelect`, `FilterMultiSelectAsync`)
+Multi-selection filter for array values or remote API endpoints:
+
+```php
+use PowerComponents\Turbine\Components\Filters\{FilterMultiSelect, FilterMultiSelectAsync};
+
+// In-memory multi select
+new FilterMultiSelect('role_id')
+    ->dataSource(Role::all())
+    ->optionValue('id')
+    ->optionLabel('name');
+
+// Async multi select from remote URL
+new FilterMultiSelectAsync('user_id')
+    ->url('https://api.example.com/users')
+    ->method('POST')
+    ->parameters(['active' => true]);
+```
+
+#### 4. Boolean (`FilterBoolean`)
+Boolean toggle filter (`true` / `false`):
+
+```php
+use PowerComponents\Turbine\Components\Filters\FilterBoolean;
+
+new FilterBoolean('is_active')
+    ->label('Active', 'Inactive');
+```
+
+#### 5. Number & Range (`FilterNumber`)
+Numeric range filter with thousands and decimal separators:
+
+```php
+use PowerComponents\Turbine\Components\Filters\FilterNumber;
+
+new FilterNumber('price')
+    ->thousands('.')
+    ->decimal(',')
+    ->placeholder('Min price', 'Max price');
+```
+
+#### 6. Date & Date-Time Pickers (`FilterDatePicker`, `FilterDateTimePicker`)
+Date and timestamp range filters:
+
+```php
+use PowerComponents\Turbine\Components\Filters\{FilterDatePicker, FilterDateTimePicker};
+
+new FilterDatePicker('created_at');
+new FilterDateTimePicker('updated_at');
+```
+
+#### 7. Dynamic Filter (`FilterDynamic`)
+Pass custom front-end filter props and component names:
+
+```php
+use PowerComponents\Turbine\Components\Filters\FilterDynamic;
+
+new FilterDynamic('custom_field')
+    ->component('custom-slider-filter', ['min' => 0, 'max' => 100]);
+```
+
+#### 8. Custom Filter Query Callbacks (`builder` and `collection`)
+Override standard query filtering logic per filter instance:
+
+```php
+new FilterInputText('title')
+    ->builder(function ($query, $value) {
+        return $query->whereRaw('LOWER(title) LIKE ?', ['%' . strtolower($value) . '%']);
+    })
+    ->collection(function ($collection, $value) {
+        return $collection->filter(fn ($row) => str_contains($row['title'], $value));
+    });
+```
+
 ### Datasources
 
-`datasource()` may return any of:
+`datasource()` accepts a closure or value returning any supported data source:
 
-- an Eloquent Builder (`User::query()`), a Query Builder (`DB::table('users')`), or a Relation
-- a Laravel Scout Builder (`User::search($term)`) — requires `laravel/scout`
-- an `Illuminate\Support\Collection` (in-memory data)
+```php
+// 1. Eloquent Model, Query Builder, or Relation
+Turbine::make()->datasource(fn () => User::query());
+Turbine::make()->datasource(fn () => DB::table('users')->where('active', true));
+Turbine::make()->datasource(fn () => $user->posts());
 
-The engine detects the type and applies the matching search/filter/sort/paginate pipeline.
+// 2. Laravel Scout Builder (search engines)
+Turbine::make()->datasource(fn () => User::search($request->get('search')));
+
+// 3. Collection or Array (in-memory data)
+Turbine::make()->datasource(fn () => collect([
+    ['id' => 1, 'name' => 'Alice'],
+    ['id' => 2, 'name' => 'Bob'],
+]));
+```
+
+The engine automatically inspects the datasource type and delegates query execution, searching, filtering, sorting, and pagination to the matching processor.
+
+### Custom DataSources
+
+You can register custom DataSource processors to handle custom REST APIs, DTO repositories, Elasticsearch, or third-party SDKs by implementing `PowerComponents\Turbine\Contracts\DataSourceProcessor` (or extending `DataSourceBase`).
+
+#### 1. Implementation Example
+
+```php
+namespace App\DataSources;
+
+use Illuminate\Pagination\LengthAwarePaginator;
+use PowerComponents\Turbine\Contracts\DataSourceProcessor;
+use PowerComponents\Turbine\DataSource\Processors\DataSourceBase;
+
+class CustomApiProcessor extends DataSourceBase implements DataSourceProcessor
+{
+    /**
+     * Determine if this processor handles the given datasource.
+     */
+    public static function match(mixed $datasource): bool
+    {
+        return $datasource instanceof MyCustomClient || $datasource instanceof MyCustomRepository;
+    }
+
+    /**
+     * Resolve optional table/entity identifier name for metadata.
+     */
+    public function resolveTable(mixed $datasource): ?string
+    {
+        return 'custom_api_source';
+    }
+
+    /**
+     * Process query, filters, sorting and pagination.
+     */
+    public function process(array $properties = [], mixed $datasource = null): array
+    {
+        $source = $datasource ?? $this->component->datasource($properties);
+
+        // Fetch data from custom API or repository...
+        $response = $source->fetchResults(
+            page: request('page', 1),
+            perPage: 15
+        );
+
+        $paginator = new LengthAwarePaginator(
+            items: $response->items(),
+            total: $response->total(),
+            perPage: 15,
+            currentPage: request('page', 1)
+        );
+
+        return [
+            'results' => $paginator,
+            'actionsByRow' => [],
+        ];
+    }
+}
+```
+
+#### 2. Registration Possibilities
+
+You can register custom DataSource processors in three different ways:
+
+##### Option A: Fluent API (Boot or Service Provider)
+```php
+use PowerComponents\Turbine\Turbine;
+
+// Registers the processor with top priority
+Turbine::registerDataSource(CustomApiProcessor::class);
+```
+
+##### Option B: Config File (`config/turbine.php`)
+```php
+return [
+    'max_per_page' => 1000,
+
+    'datasources' => [
+        App\DataSources\CustomApiProcessor::class,
+        PowerComponents\Turbine\DataSource\Processors\CollectionProcessor::class,
+        PowerComponents\Turbine\DataSource\Processors\ScoutBuilderProcessor::class,
+        PowerComponents\Turbine\DataSource\Processors\ModelProcessor::class,
+    ],
+];
+```
+
+##### Option C: Service Provider Container Binding
+```php
+use PowerComponents\Turbine\DataSource\DataSourceManager;
+
+public function boot(): void
+{
+    app(DataSourceManager::class)->register(CustomApiProcessor::class, prepend: true);
+}
+```
 
 ## Reusing an existing component
 

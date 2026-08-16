@@ -1,5 +1,7 @@
 <?php
 
+namespace PowerComponents\Turbine\Tests\Feature;
+
 use Illuminate\Pagination\LengthAwarePaginator;
 use PowerComponents\Turbine\Components\Filters\FilterInputText;
 use PowerComponents\Turbine\DataSource\ProcessDataSource;

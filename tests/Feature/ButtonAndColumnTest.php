@@ -1,5 +1,7 @@
 <?php
 
+namespace PowerComponents\Turbine\Tests\Feature;
+
 use PowerComponents\Turbine\{Button, Column};
 
 it('creates and configures Button fluently', function () {
@@ -96,5 +98,5 @@ it('tests Column additional methods and custom sorting', function () {
         ->and($column->contentClassField)->toBe('status')
         ->and($column->contentClasses)->toBe(['class-a', 'class-b'])
         ->and($column->template)->toBeTrue()
-        ->and($column->sortCallback)->toBeInstanceOf(Closure::class);
+        ->and($column->sortCallback)->toBeInstanceOf(\Closure::class);
 });

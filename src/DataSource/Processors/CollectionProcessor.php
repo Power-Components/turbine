@@ -17,6 +17,31 @@ class CollectionProcessor extends DataSourceBase
             || is_iterable($key);
     }
 
+    public function resolveTable(mixed $datasource): ?string
+    {
+        if ($datasource instanceof BaseCollection && $datasource->isNotEmpty()) {
+            $first = $datasource->first();
+            if (is_object($first) && method_exists($first, 'getTable')) {
+                /** @var string $table */
+                $table = $first->getTable();
+
+                return $table;
+            }
+        }
+
+        if (is_array($datasource) && count($datasource) > 0) {
+            $first = reset($datasource);
+            if (is_object($first) && method_exists($first, 'getTable')) {
+                /** @var string $table */
+                $table = $first->getTable();
+
+                return $table;
+            }
+        }
+
+        return parent::resolveTable($datasource);
+    }
+
     /**
      * @param  array<string, mixed>  $properties
      * @return array{results: mixed, actionsByRow: array<int|string, list<array<string, mixed>>>}

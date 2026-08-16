@@ -1,5 +1,7 @@
 <?php
 
+namespace PowerComponents\Turbine\Tests\Feature;
+
 use PowerComponents\Turbine\{Column, Fields};
 use PowerComponents\Turbine\DataSource\ProcessDataSource;
 use PowerComponents\Turbine\Support\State\{ArrayGridContext, State};

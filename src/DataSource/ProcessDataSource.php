@@ -2,10 +2,7 @@
 
 namespace PowerComponents\Turbine\DataSource;
 
-use Illuminate\Database\Eloquent\Relations\Relation;
-use Illuminate\Database\Query\Builder as QueryBuilder;
 use PowerComponents\Turbine\Contracts\Context;
-use PowerComponents\Turbine\DataSource\Processors\{CollectionProcessor, DataSourceBase, ModelProcessor, ScoutBuilderProcessor};
 use Throwable;
 
 class ProcessDataSource
@@ -32,12 +29,12 @@ class ProcessDataSource
 
         $datasource = $this->datasource;
 
-        if ($datasource instanceof QueryBuilder) {
-            /** @var string $from */
-            $from = $datasource->from;
-            $this->component->setCurrentTable($from);
-        } elseif ($datasource instanceof Relation || (is_object($datasource) && method_exists($datasource, 'getModel'))) {
-            $this->component->setCurrentTable($datasource->getModel()->getTable());
+        /** @var DataSourceManager $manager */
+        $manager = app(DataSourceManager::class);
+
+        $table = $manager->resolveTable($datasource, $this->component);
+        if ($table !== null) {
+            $this->component->setCurrentTable($table);
         }
 
         return $datasource;
@@ -56,20 +53,11 @@ class ProcessDataSource
 
         $datasource = is_object($this->datasource) ? clone $this->datasource : $this->datasource;
 
-        /** @var list<class-string<DataSourceBase>> $processors */
-        $processors = [
-            CollectionProcessor::class,
-            ScoutBuilderProcessor::class,
-        ];
+        /** @var DataSourceManager $manager */
+        $manager = app(DataSourceManager::class);
 
-        foreach ($processors as $processor) {
-            if ($processor::match($datasource)) {
-                $instance = new $processor($this->component, $isExport);
+        $processor = $manager->resolveProcessor($datasource, $this->component, $isExport);
 
-                return $instance->process($this->properties, $datasource);
-            }
-        }
-
-        return (new ModelProcessor($this->component, $isExport))->process($this->properties, $datasource);
+        return $processor->process($this->properties, $datasource);
     }
 }

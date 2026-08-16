@@ -1,5 +1,7 @@
 <?php
 
+namespace PowerComponents\Turbine\Tests\Feature;
+
 use PowerComponents\Turbine\{Column, Fields};
 use PowerComponents\Turbine\Components\Filters\{FilterInputText, FilterNumber};
 use PowerComponents\Turbine\Components\SetUp\FilterBuilder as FilterBuilderSetUp;

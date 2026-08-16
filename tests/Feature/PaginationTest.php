@@ -1,5 +1,7 @@
 <?php
 
+namespace PowerComponents\Turbine\Tests\Feature;
+
 use Illuminate\Pagination\Paginator;
 use PowerComponents\Turbine\DataSource\ProcessDataSource;
 

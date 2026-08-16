@@ -1,5 +1,7 @@
 <?php
 
+namespace PowerComponents\Turbine\Tests\Feature;
+
 use PowerComponents\Turbine\{Button, Column, Fields, Turbine};
 use PowerComponents\Turbine\Components\Filters\FilterInputText;
 use PowerComponents\Turbine\Components\Rules\RuleActions;
@@ -113,5 +115,5 @@ describe('Turbine builder', function () {
 
     it('requires a datasource', function () {
         Turbine::make()->toArray();
-    })->throws(LogicException::class);
+    })->throws(\LogicException::class);
 });

@@ -1,5 +1,7 @@
 <?php
 
+namespace PowerComponents\Turbine\Tests\Feature;
+
 use Illuminate\Support\Collection;
 use PowerComponents\Turbine\Components\Filters\{
     FilterInputText,

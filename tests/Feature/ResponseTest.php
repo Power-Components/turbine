@@ -1,5 +1,7 @@
 <?php
 
+namespace PowerComponents\Turbine\Tests\Feature;
+
 use PowerComponents\Turbine\{Button, Column, Fields, Response};
 use PowerComponents\Turbine\Components\Filters\FilterInputText;
 use PowerComponents\Turbine\Support\State\{ArrayGridContext, State};

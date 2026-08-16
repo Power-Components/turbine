@@ -1,5 +1,7 @@
 <?php
 
+namespace PowerComponents\Turbine\Tests\Feature;
+
 use PowerComponents\Turbine\Components\Filters\{
     FilterBoolean,
     FilterDatePicker,

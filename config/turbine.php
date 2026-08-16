@@ -1,5 +1,7 @@
 <?php
 
+use PowerComponents\Turbine\DataSource\Processors\{CollectionProcessor, ModelProcessor, ScoutBuilderProcessor};
+
 return [
 
     /*
@@ -12,4 +14,18 @@ return [
     |
     */
     'max_per_page' => 1000,
+
+    /*
+    |--------------------------------------------------------------------------
+    | DataSource Processors
+    |--------------------------------------------------------------------------
+    |
+    | Registered DataSource processor classes evaluated in sequence.
+    |
+    */
+    'datasources' => [
+        CollectionProcessor::class,
+        ScoutBuilderProcessor::class,
+        ModelProcessor::class,
+    ],
 ];

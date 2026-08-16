@@ -1,5 +1,7 @@
 <?php
 
+namespace PowerComponents\Turbine\Tests\Feature;
+
 use PowerComponents\Turbine\DataSource\ProcessDataSource;
 use PowerComponents\Turbine\Tests\Fixtures\Models\Dish;
 
