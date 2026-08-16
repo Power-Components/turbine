@@ -25,7 +25,7 @@ use PowerComponents\Turbine\Contracts\Definition;
  * @method static class(string $classes)
  * @method static disable(bool $disable = true)
  */
-final class Button implements Definition
+class Button implements Definition
 {
     use Macroable;
 
@@ -59,33 +59,33 @@ final class Button implements Definition
 
     public function __construct(public string $action) {}
 
-    public static function add(string $action = ''): Button
+    public static function add(string $action = ''): static
     {
-        return new Button($action);
+        return new static($action);
     }
 
     /** @param view-string $view */
-    public function view(string $view): Button
+    public function view(string $view): static
     {
         $this->view = $view;
 
         return $this;
     }
 
-    public static function make(string $action, ?string $slot = null): self
+    public static function make(string $action, ?string $slot = null): static
     {
-        return (new self($action))
+        return (new static($action))
             ->slot($slot);
     }
 
-    public function tag(?string $tag = null): Button
+    public function tag(?string $tag = null): static
     {
         $this->tag = $tag;
 
         return $this;
     }
 
-    public function slot(?string $slot = null): Button
+    public function slot(?string $slot = null): static
     {
         $this->slot = $slot;
 
@@ -93,7 +93,7 @@ final class Button implements Definition
     }
 
     /** @param  array<string, mixed>  $attributes */
-    public function attributes(array $attributes): Button
+    public function attributes(array $attributes): static
     {
         $this->attributes = array_merge($attributes, $this->attributes);
 
@@ -101,7 +101,7 @@ final class Button implements Definition
     }
 
     /** @param  array<string, mixed>  $iconAttributes */
-    public function icon(string $icon, array $iconAttributes = []): Button
+    public function icon(string $icon, array $iconAttributes = []): static
     {
         $this->icon = $icon;
         $this->iconAttributes = $iconAttributes;

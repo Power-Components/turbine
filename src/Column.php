@@ -21,7 +21,7 @@ use PowerComponents\Turbine\Contracts\Definition;
  * @method static withMin(string $label, bool $header = false, bool $footer = true) @deprecated since 7.x, use withSummary() instead
  * @method static withMax(string $label, bool $header = false, bool $footer = true) @deprecated since 7.x, use withSummary() instead
  */
-final class Column implements Definition
+class Column implements Definition
 {
     use Macroable;
 
@@ -88,17 +88,17 @@ final class Column implements Definition
     /**
      * Adds a new Column
      */
-    public static function add(): self
+    public static function add(): static
     {
-        return new Column();
+        return new static();
     }
 
     /**
      * Make a new Column
      */
-    public static function make(string $title, string $field, string $dataField = ''): self
+    public static function make(string $title, string $field, string $dataField = ''): static
     {
-        return (new Column())
+        return (new static())
             ->title($title)
             ->field($field, $dataField);
     }
@@ -106,15 +106,15 @@ final class Column implements Definition
     /**
      * Make a new action
      */
-    public static function action(string $title): self
+    public static function action(string $title): static
     {
-        return (new Column())
+        return (new static())
             ->title($title)
             ->isAction()
             ->visibleInExport(false);
     }
 
-    public function isAction(): Column
+    public function isAction(): static
     {
         $this->isAction = true;
 
@@ -124,14 +124,14 @@ final class Column implements Definition
     /**
      * Adds title
      */
-    public function title(string $title): Column
+    public function title(string $title): static
     {
         $this->title = $title;
 
         return $this;
     }
 
-    public function fixedOnResponsive(): Column
+    public function fixedOnResponsive(): static
     {
         $this->fixedOnResponsive = true;
 
@@ -141,7 +141,7 @@ final class Column implements Definition
     /**
      * Adds index ($loop->index)
      */
-    public function index(): Column
+    public function index(): static
     {
         $this->index = true;
 
@@ -151,7 +151,7 @@ final class Column implements Definition
     /**
      * Adds placeholder
      */
-    public function placeholder(string $placeholder): Column
+    public function placeholder(string $placeholder): static
     {
         $this->placeholder = $placeholder;
 
@@ -161,14 +161,14 @@ final class Column implements Definition
     /**
      * Makes the column searchable
      */
-    public function searchable(): Column
+    public function searchable(): static
     {
         $this->searchable = true;
 
         return $this;
     }
 
-    public function enableSort(): Column
+    public function enableSort(): static
     {
         $this->enableSort = true;
 
@@ -178,7 +178,7 @@ final class Column implements Definition
     /**
      * Adds sort to the column header
      */
-    public function sortable(): Column
+    public function sortable(): static
     {
         $this->enableSort();
 
@@ -191,7 +191,7 @@ final class Column implements Definition
      * Sets a custom sorting callback for this column.
      * The callback receives the query builder and sort direction.
      */
-    public function sortUsing(Closure $callback): Column
+    public function sortUsing(Closure $callback): static
     {
         $this->enableSort();
 
@@ -205,7 +205,7 @@ final class Column implements Definition
     /**
      * Field in the database
      */
-    public function field(string $field, string $dataField = ''): Column
+    public function field(string $field, string $dataField = ''): static
     {
         $this->field = $field;
 
@@ -217,7 +217,7 @@ final class Column implements Definition
     /**
      * Class html tag header table
      */
-    public function headerAttribute(string $classAttr = '', string $styleAttr = ''): Column
+    public function headerAttribute(string $classAttr = '', string $styleAttr = ''): static
     {
         $this->headerClass = $classAttr;
         $this->headerStyle = $styleAttr;
@@ -228,7 +228,7 @@ final class Column implements Definition
     /**
      * Class html tag body table
      */
-    public function bodyAttribute(string $classAttr = '', string $styleAttr = ''): Column
+    public function bodyAttribute(string $classAttr = '', string $styleAttr = ''): static
     {
         $this->bodyClass = $classAttr;
         $this->bodyStyle = $styleAttr;
@@ -239,7 +239,7 @@ final class Column implements Definition
     /**
      * Hide the column
      */
-    public function hidden(bool $isHidden = true, bool $isForceHidden = true): Column
+    public function hidden(bool $isHidden = true, bool $isForceHidden = true): static
     {
         $this->hidden = $isHidden;
         $this->forceHidden = $isForceHidden;
@@ -247,14 +247,14 @@ final class Column implements Definition
         return $this;
     }
 
-    public function visibleInExport(?bool $visible): Column
+    public function visibleInExport(?bool $visible): static
     {
         $this->visibleInExport = $visible;
 
         return $this;
     }
 
-    public function contentClassField(string $dataField = ''): Column
+    public function contentClassField(string $dataField = ''): static
     {
         $this->contentClassField = $dataField;
 
@@ -262,14 +262,14 @@ final class Column implements Definition
     }
 
     /** @param  string|list<string>  $contentClasses */
-    public function contentClasses(string|array $contentClasses): Column
+    public function contentClasses(string|array $contentClasses): static
     {
         $this->contentClasses = $contentClasses;
 
         return $this;
     }
 
-    public function template(): Column
+    public function template(): static
     {
         $this->template = true;
 

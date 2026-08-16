@@ -4,7 +4,7 @@ namespace PowerComponents\Turbine\Components\SetUp;
 
 use PowerComponents\Turbine\Contracts\Definition;
 
-final class Header implements Definition
+class Header implements Definition
 {
     public string $name = 'header';
 

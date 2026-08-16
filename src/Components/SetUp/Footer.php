@@ -4,7 +4,7 @@ namespace PowerComponents\Turbine\Components\SetUp;
 
 use PowerComponents\Turbine\Contracts\Definition;
 
-final class Footer implements Definition
+class Footer implements Definition
 {
     public string $name = 'footer';
 

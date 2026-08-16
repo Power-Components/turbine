@@ -4,7 +4,7 @@ namespace PowerComponents\Turbine\Components\SetUp;
 
 use PowerComponents\Turbine\Contracts\Definition;
 
-final class Exportable implements Definition
+class Exportable implements Definition
 {
     public const TYPE_XLS = 'xlsx';
 

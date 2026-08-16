@@ -4,7 +4,7 @@ namespace PowerComponents\Turbine\Components\SetUp;
 
 use PowerComponents\Turbine\Contracts\Definition;
 
-final class Detail implements Definition
+class Detail implements Definition
 {
     public string $name = 'detail';
 
