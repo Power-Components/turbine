@@ -1,7 +1,7 @@
 {
     "name": "power-components/turbine",
-    "description": "Framework-agnostic data engine for Turbine (search, filters, sort, pagination).",
-    "keywords": ["laravel", "turbine", "datatable"],
+    "description": "Headless, UI-agnostic table engine for Laravel: describe the grid in PHP, get JSON for Inertia, Livewire, REST or plain AJAX.",
+    "keywords": ["laravel", "turbine", "datatable", "headless", "powergrid", "inertia", "livewire", "json-api", "eloquent", "scout"],
     "authors": [
         {
             "name": "Luan Freitas",
