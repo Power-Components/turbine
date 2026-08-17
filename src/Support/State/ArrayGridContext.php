@@ -61,7 +61,7 @@ final class ArrayGridContext implements Context
     public function state(): State
     {
         if (empty($this->state->columns) && ! empty($declared = $this->declaredColumns())) {
-            return $this->state->withColumns($declared);
+            return $this->state->withColumns(array_values($declared));
         }
 
         return $this->state;
@@ -79,7 +79,10 @@ final class ArrayGridContext implements Context
             $this->columns = ($this->columns)();
         }
 
-        return $this->columns;
+        /** @var array<int, mixed> $columns */
+        $columns = $this->columns;
+
+        return $columns;
     }
 
     public function hasResolvedColumns(): bool

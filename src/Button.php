@@ -7,6 +7,8 @@ use Illuminate\Support\Traits\Macroable;
 use PowerComponents\Turbine\Contracts\Definition;
 
 /**
+ * @phpstan-consistent-constructor
+ *
  * @method static dispatch(string $event, array<string, mixed> $params)
  * @method static dispatchTo(string $component, string $event, array<string, mixed> $params)
  * @method static dispatchSelf(string $event, array<string, mixed> $params)

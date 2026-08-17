@@ -7,6 +7,8 @@ use Illuminate\Support\Traits\Macroable;
 use PowerComponents\Turbine\Contracts\Definition;
 
 /**
+ * @phpstan-consistent-constructor
+ *
  * Macros
  *
  * @method static withSummary(string $key, string $label, \Closure $using, bool $header = false, bool $footer = true)

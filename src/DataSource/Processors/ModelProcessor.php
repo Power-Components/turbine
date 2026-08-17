@@ -2,8 +2,8 @@
 
 namespace PowerComponents\Turbine\DataSource\Processors;
 
+use Illuminate\Pagination\AbstractPaginator;
 use Illuminate\Pipeline\Pipeline;
-use Illuminate\Support\Collection;
 use PowerComponents\Turbine\DataSource\DataTransformer;
 use PowerComponents\Turbine\DataSource\Processors\Database\Pipelines;
 use PowerComponents\Turbine\DataSource\Processors\Pipelines as CommonPipelines;
@@ -46,7 +46,7 @@ class ModelProcessor extends DataSourceBase
             ])
             ->thenReturn();
 
-        /** @var Collection<int, mixed> $collection */
+        /** @var AbstractPaginator<int, mixed> $paginate */
         $collection = $paginate->getCollection();
 
         $dataTransformer = new DataTransformer($this->component);

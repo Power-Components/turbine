@@ -73,5 +73,8 @@ jobs:
       - name: Install Composer dependencies
         run: composer install --no-progress --optimize-autoloader --no-scripts
 
+      - name: Run PHPStan
+        run: composer test:types
+
       - name: Tests
         run: composer test

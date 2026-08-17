@@ -22,7 +22,7 @@ trait ResolvesGridSorting
         if (! $this->hasResolvedColumns()) {
             $fieldKey = str_contains($sortField, '.') ? explode('.', $sortField)[1] : $sortField;
 
-            if ($this->fields !== null && array_key_exists($fieldKey, $this->fields->fields)) {
+            if (array_key_exists($fieldKey, $this->fields->fields)) {
                 return true;
             }
         }

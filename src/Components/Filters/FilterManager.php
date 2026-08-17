@@ -57,7 +57,7 @@ class FilterManager
     /**
      * @param  list<FilterBase>  $declaredFilters
      * @param  array<int, mixed>  $columns
-     * @param  array<string, array<string, mixed>>  $filters
+     * @param  array<string, mixed>  $filters
      * @param  list<array<string, mixed>>  $enabledFilters
      */
     public function applyDefaults(
@@ -70,67 +70,79 @@ class FilterManager
         $columnsByField = collect($columns)->mapWithKeys(function ($column) {
             $field = data_get($column, 'field');
             $dataField = data_get($column, 'dataField');
-            $key = filled($field) ? strval($field) : strval($dataField);
+            $fieldStr = is_string($field) || is_numeric($field) ? (string) $field : '';
+            $dataFieldStr = is_string($dataField) || is_numeric($dataField) ? (string) $dataField : '';
+            $key = filled($fieldStr) ? $fieldStr : $dataFieldStr;
 
             return [$key => $column];
         });
 
         foreach ($declaredFilters as $filter) {
-            if (blank($filter->defaultValue)) {
+            if (blank($filter->defaultValue) || blank($filter->field)) {
                 continue;
             }
 
-            $field = $filter->field;
+            $field = (string) $filter->field;
             $columnData = $columnsByField->get($filter->column);
-            $label = data_get($columnData, 'title', $field);
+            $labelRaw = data_get($columnData, 'title', $field);
+            $label = is_string($labelRaw) ? $labelRaw : $field;
             $key = data_get($filter, 'key');
             $defaultValue = $filter->defaultValue;
 
             switch ($key) {
                 case 'select':
-                    data_set($filters, "select.{$field}", $defaultValue);
-                    $this->addEnabledFilter($field, is_string($label) ? $label : $field, $enabledFilters);
+                    $filters['select'] = (array) ($filters['select'] ?? []);
+                    $filters['select'][$field] = $defaultValue;
+                    $this->addEnabledFilter($field, $label, $enabledFilters);
                     $applied = true;
                     break;
 
                 case 'multi_select':
                     $values = is_array($defaultValue) ? $defaultValue : [$defaultValue];
-                    data_set($filters, "multi_select.{$field}", $values);
-                    $this->addEnabledFilter($field, is_string($label) ? $label : $field, $enabledFilters);
+                    $filters['multi_select'] = (array) ($filters['multi_select'] ?? []);
+                    $filters['multi_select'][$field] = $values;
+                    $this->addEnabledFilter($field, $label, $enabledFilters);
                     $applied = true;
                     break;
 
                 case 'boolean':
-                    data_set($filters, "boolean.{$field}", $defaultValue);
-                    $this->addEnabledFilter($field, is_string($label) ? $label : $field, $enabledFilters);
+                    $filters['boolean'] = (array) ($filters['boolean'] ?? []);
+                    $filters['boolean'][$field] = $defaultValue;
+                    $this->addEnabledFilter($field, $label, $enabledFilters);
                     $applied = true;
                     break;
 
                 case 'input_text':
+                    $filters['input_text'] = (array) ($filters['input_text'] ?? []);
                     if (is_array($defaultValue)) {
-                        data_set($filters, "input_text.{$field}", $defaultValue['value'] ?? '');
+                        $filters['input_text'][$field] = $defaultValue['value'] ?? '';
                         if (isset($defaultValue['operator'])) {
-                            data_set($filters, "input_text_options.{$field}", $defaultValue['operator']);
+                            $filters['input_text_options'] = (array) ($filters['input_text_options'] ?? []);
+                            $filters['input_text_options'][$field] = $defaultValue['operator'];
                         }
                     } else {
-                        data_set($filters, "input_text.{$field}", $defaultValue);
+                        $filters['input_text'][$field] = $defaultValue;
                     }
-                    $this->addEnabledFilter($field, is_string($label) ? $label : $field, $enabledFilters);
+                    $this->addEnabledFilter($field, $label, $enabledFilters);
                     $applied = true;
                     break;
 
                 case 'number':
+                    $filters['number'] = (array) ($filters['number'] ?? []);
+                    /** @var array<string, mixed> $numberFieldFilter */
+                    $numberFieldFilter = (array) ($filters['number'][$field] ?? []);
                     if (is_array($defaultValue)) {
                         if (isset($defaultValue['start'])) {
-                            data_set($filters, "number.{$field}.start", $defaultValue['start']);
+                            $numberFieldFilter['start'] = $defaultValue['start'];
                         }
                         if (isset($defaultValue['end'])) {
-                            data_set($filters, "number.{$field}.end", $defaultValue['end']);
+                            $numberFieldFilter['end'] = $defaultValue['end'];
                         }
                     } else {
-                        data_set($filters, "number.{$field}.start", $defaultValue);
+                        $numberFieldFilter['start'] = $defaultValue;
                     }
-                    $this->addEnabledFilter($field, is_string($label) ? $label : $field, $enabledFilters);
+                    $filters['number'][$field] = $numberFieldFilter;
+                    $this->addEnabledFilter($field, $label, $enabledFilters);
                     $applied = true;
                     break;
 
@@ -139,16 +151,17 @@ class FilterManager
                 case 'datepicker':
                 case 'datetimepicker':
                     $filterKey = in_array($key, ['date', 'datepicker'], true) ? 'date' : 'datetime';
+                    $filters[$filterKey] = (array) ($filters[$filterKey] ?? []);
                     if (is_array($defaultValue)) {
-                        data_set($filters, "{$filterKey}.{$field}", [
+                        $filters[$filterKey][$field] = [
                             'start' => $defaultValue['start'] ?? '',
                             'end' => $defaultValue['end'] ?? '',
                             'formatted' => $defaultValue['formatted'] ?? '',
-                        ]);
+                        ];
                     } else {
-                        data_set($filters, "{$filterKey}.{$field}", $defaultValue);
+                        $filters[$filterKey][$field] = $defaultValue;
                     }
-                    $this->addEnabledFilter($field, is_string($label) ? $label : $field, $enabledFilters);
+                    $this->addEnabledFilter($field, $label, $enabledFilters);
                     $applied = true;
                     break;
             }

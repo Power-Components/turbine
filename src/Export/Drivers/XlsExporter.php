@@ -23,8 +23,9 @@ class XlsExporter implements ExportDriverInterface
             );
         }
 
-        $striped = strval(data_get($exportOptions, 'striped'));
-        /** @var array<int, float> $columnWidth */
+        $stripedRaw = data_get($exportOptions, 'striped');
+        $striped = is_scalar($stripedRaw) ? (string) $stripedRaw : '';
+        /** @var array<int|string, float|int> $columnWidth */
         $columnWidth = (array) data_get($exportOptions, 'columnWidth', []);
 
         /** @var Options $options */
@@ -35,32 +36,31 @@ class XlsExporter implements ExportDriverInterface
         $writer->openToFile($filePath);
 
         $headerStyle = (new Style())
-            ->withFontBold(true)
-            ->withFontSize(12)
-            ->withShouldWrapText(false)
-            ->withBackgroundColor('d0d3d8');
+            ->setFontBold()
+            ->setFontSize(12)
+            ->setShouldWrapText(false)
+            ->setBackgroundColor('d0d3d8');
 
-        $writer->addRow(Row::fromValuesWithStyle($headers, $headerStyle));
+        /** @var list<bool|\DateInterval|\DateTimeInterface|float|int|string|null> $headerRow */
+        $headerRow = (array) $headers;
+        $writer->addRow(Row::fromValues($headerRow, $headerStyle));
 
         foreach ($columnWidth as $column => $width) {
-            $options->setColumnWidth($width, $column);
+            $colIndex = intval($column) + 1;
+            if ($colIndex >= 1) {
+                $options->setColumnWidth((int) $width, $colIndex);
+            }
         }
 
-        $defaultStyle = (new Style())
-            ->withFontSize(12);
-
-        $grayStyle = (new Style())
-            ->withFontSize(12)
-            ->withBackgroundColor($striped);
+        $defaultStyle = (new Style())->setFontSize(12);
+        $grayStyle = (new Style())->setFontSize(12)->setBackgroundColor($striped);
 
         foreach ($rows as $key => $row) {
-            if (count($row) > 0) {
-                if ($key % 2 && $striped !== '') {
-                    $spoutRow = Row::fromValuesWithStyle($row, $grayStyle);
-                } else {
-                    $spoutRow = Row::fromValuesWithStyle($row, $defaultStyle);
-                }
-                $writer->addRow($spoutRow);
+            /** @var list<bool|\DateInterval|\DateTimeInterface|float|int|string|null> $rowValues */
+            $rowValues = (array) $row;
+            if (count($rowValues) > 0) {
+                $style = ($key % 2 && $striped !== '') ? $grayStyle : $defaultStyle;
+                $writer->addRow(Row::fromValues($rowValues, $style));
             }
         }
 

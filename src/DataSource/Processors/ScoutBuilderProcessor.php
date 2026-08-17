@@ -3,6 +3,7 @@
 namespace PowerComponents\Turbine\DataSource\Processors;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Pagination\AbstractPaginator;
 use Illuminate\Pipeline\Pipeline;
 use Laravel\Scout\Builder as ScoutBuilder;
 use PowerComponents\Turbine\DataSource\DataTransformer;
@@ -53,6 +54,7 @@ class ScoutBuilderProcessor extends DataSourceBase
             ])
             ->thenReturn();
 
+        /** @var AbstractPaginator<int, mixed> $paginate */
         $dataTransformer = new DataTransformer($this->component);
         $transformResult = $dataTransformer->transform($paginate->getCollection());
 

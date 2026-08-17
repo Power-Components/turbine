@@ -19,9 +19,14 @@ class Pagination
 
         /** @var string $pageName */
         $pageName = data_get($setUp, 'footer.pageName', 'page');
-        /** @var int $perPageFromSetup */
+        /** @var mixed $perPageFromSetup */
         $perPageFromSetup = data_get($setUp, 'footer.perPage');
-        $perPage = $this->clampPerPage(intval($perPageFromSetup));
+        $perPage = is_numeric($perPageFromSetup) ? (int) $perPageFromSetup : 10;
+        $maxConfig = config('turbine.max_per_page', 1000);
+        $maxPerPage = is_numeric($maxConfig) ? (int) $maxConfig : 1000;
+        if ($maxPerPage > 0 && $perPage > $maxPerPage) {
+            $perPage = $maxPerPage;
+        }
         /** @var string $recordCount */
         $recordCount = data_get($setUp, 'footer.recordCount');
 
@@ -39,26 +44,20 @@ class Pagination
             };
         }
 
+        /** @var mixed $query */
         if ($perPage > 0) {
-            return $query->$paginate($perPage, pageName: $pageName);
+            return $query->$paginate($perPage, pageName: $pageName); // @phpstan-ignore-line
         }
 
         $count = $query->count(); // @phpstan-ignore-line
 
         $this->component->resetToFirstPage($pageName);
 
-        return $query->$paginate($this->clampPerPage($count ?: 10), pageName: $pageName);
-    }
-
-    private function clampPerPage(int $perPage): int
-    {
-        $configured = config('turbine.max_per_page', 1000);
-        $max = is_numeric($configured) ? (int) $configured : 0;
-
-        if ($max > 0 && $perPage > $max) {
-            return $max;
+        $targetPerPage = $count ?: 10;
+        if ($maxPerPage > 0 && $targetPerPage > $maxPerPage) {
+            $targetPerPage = $maxPerPage;
         }
 
-        return $perPage;
+        return $query->$paginate($targetPerPage, pageName: $pageName); // @phpstan-ignore-line
     }
 }

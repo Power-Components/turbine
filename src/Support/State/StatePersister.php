@@ -41,7 +41,12 @@ class StatePersister
         if (in_array('columns', $persistItems) || $tableItem === 'columns') {
             $state['columns'] = collect($columns)
                 ->map(fn ($column) => (object) $column)
-                ->mapWithKeys(fn ($column) => [data_get($column, 'field') => data_get($column, 'hidden')])
+                ->mapWithKeys(function ($column) {
+                    $field = data_get($column, 'field');
+                    $key = is_scalar($field) ? (string) $field : '';
+
+                    return [$key => data_get($column, 'hidden')];
+                })
                 ->all();
         }
 
@@ -73,10 +78,12 @@ class StatePersister
         ?string $store = null
     ): void {
         $driver ??= config('livewire-powergrid.persist_driver', 'cookies');
+        $storeName = $store ?? config('livewire-powergrid.persist_driver_store');
+        $storeNameStr = is_string($storeName) ? $storeName : null;
 
         match ($driver) {
             'session' => Session::put($key, $jsonState),
-            'cache' => Cache::store($store ?? config('livewire-powergrid.persist_driver_store'))->put($key, $jsonState),
+            'cache' => Cache::store($storeNameStr)->put($key, $jsonState),
             default => Cookie::queue($key, $jsonState, 60 * 24 * 365 * 5),
         };
     }
@@ -90,11 +97,13 @@ class StatePersister
         ?string $store = null
     ): ?array {
         $driver ??= config('livewire-powergrid.persist_driver', 'cookies');
+        $storeName = $store ?? config('livewire-powergrid.persist_driver_store');
+        $storeNameStr = is_string($storeName) ? $storeName : null;
 
         /** @var string|null $storage */
         $storage = match ($driver) {
             'session' => Session::get($key),
-            'cache' => Cache::store($store ?? config('livewire-powergrid.persist_driver_store'))->get($key),
+            'cache' => Cache::store($storeNameStr)->get($key),
             default => Cookie::get($key),
         };
 
@@ -104,6 +113,9 @@ class StatePersister
 
         $decoded = json_decode($storage, true);
 
-        return is_array($decoded) ? $decoded : null;
+        /** @var array<string, mixed>|null $result */
+        $result = is_array($decoded) ? $decoded : null;
+
+        return $result;
     }
 }

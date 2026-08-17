@@ -4,6 +4,7 @@ namespace PowerComponents\Turbine\Export;
 
 use Generator;
 use Illuminate\Database\Eloquent;
+use Illuminate\Database\Eloquent\{Builder, Model};
 use Illuminate\Support\{Collection, LazyCollection, Str};
 use PowerComponents\Turbine\Components\SetUp\Exportable;
 use PowerComponents\Turbine\Contracts\Context;
@@ -21,6 +22,9 @@ class ExportEngine
         'xlsx' => XlsExporter::class,
     ];
 
+    /**
+     * @param  Exportable|array<string, mixed>  $exportOptions
+     */
     public function build(
         Context $context,
         string $exportType,
@@ -74,6 +78,7 @@ class ExportEngine
     }
 
     /**
+     * @param  Exportable|array<string, mixed>  $exportOptions
      * @return Eloquent\Collection<int, mixed>|Collection<int, mixed>|LazyCollection<int, mixed>
      */
     public function prepareDataset(
@@ -98,15 +103,16 @@ class ExportEngine
             /** @var mixed $results */
             $results = data_get($processed, 'results', $processed);
 
-            if (method_exists($results, 'getCollection')) {
+            if (is_object($results) && method_exists($results, 'getCollection')) {
                 $results = $results->getCollection();
             }
 
             /** @var Collection<int, mixed> $collection */
-            $collection = $results instanceof Collection ? $results : collect($results);
+            $collection = $results instanceof Collection ? $results : collect(is_iterable($results) ? $results : []);
 
             if (! empty($filtered)) {
-                $collection = $collection->whereIn($context->primaryKey(), $filtered)->values();
+                $primaryKey = $context->state()->primaryKey;
+                $collection = $collection->whereIn($primaryKey, $filtered)->values();
             }
 
             $dataTransformer = new DataTransformer($context);
@@ -117,17 +123,21 @@ class ExportEngine
         $currentTable = method_exists($context, 'currentTable') ? $context->currentTable() : $state->tableName;
 
         $property = function (string $prop) use ($context, $currentTable) {
-            $value = $prop === 'primaryKey' ? $context->primaryKey() : data_get($context, $prop);
+            $value = $prop === 'primaryKey' ? $context->state()->primaryKey : data_get($context, $prop);
+            $valueStr = is_scalar($value) ? (string) $value : '';
 
-            return Str::of(strval($value))->contains('.')
-                ? strval($value)
-                : $currentTable.'.'.strval($value);
+            return Str::of($valueStr)->contains('.')
+                ? $valueStr
+                : $currentTable.'.'.$valueStr;
         };
 
         /** @var array<string, mixed> $queryOptions */
         $queryOptions = (array) data_get($exportOptions, 'queryOptions', []);
 
-        $results = $processDataSource->datasource
+        /** @var Builder<Model> $datasourceQuery */
+        $datasourceQuery = $processDataSource->datasource;
+
+        $results = $datasourceQuery
             ->where(function ($query) use ($context) {
                 app()->makeWith(SearchHandlerContract::class, [
                     'component' => $context,
@@ -150,7 +160,11 @@ class ExportEngine
                     $sortDirection = $queryOptions['sortDirection'];
                 }
 
-                return $query->orderBy($sortField, Sql::sanitizeSortDirection($sortDirection));
+                $sanitizedDirection = Sql::sanitizeSortDirection($sortDirection);
+                /** @var 'asc'|'desc' $dir */
+                $dir = in_array($sanitizedDirection, ['asc', 'desc'], true) ? $sanitizedDirection : 'asc';
+
+                return $query->orderBy($sortField, $dir);
             })
             ->cursor();
 

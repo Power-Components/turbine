@@ -7,7 +7,4 @@ parameters:
 
     level: 9
 
-    ignoreErrors:
-        - '#Cannot call method [a-zA-Z0-9\\_]#'
-
     treatPhpDocTypesAsCertain: false

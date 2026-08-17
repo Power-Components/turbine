@@ -31,7 +31,7 @@ class FilterEnumSelect extends FilterBase
         $collection = collect($this->dataSource)->map(function ($case) use (&$optionLabel) {
             $option = (array) $case;
 
-            if (method_exists($case, 'labelTurbineFilter')) {
+            if (is_object($case) && method_exists($case, 'labelTurbineFilter')) {
                 $option['name'] = $case->labelTurbineFilter();
                 $optionLabel = 'name';
             }
