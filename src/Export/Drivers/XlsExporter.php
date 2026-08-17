@@ -35,8 +35,7 @@ class XlsExporter implements ExportDriverInterface
 
         $writer->openToFile($filePath);
 
-        $style = new Style();
-        if (method_exists($style, 'setFontBold')) {
+        if (method_exists(Style::class, 'setFontBold')) {
             $headerStyle = (new Style())
                 ->setFontBold()
                 ->setFontSize(12)
@@ -45,9 +44,7 @@ class XlsExporter implements ExportDriverInterface
             $defaultStyle = (new Style())->setFontSize(12);
             $grayStyle = (new Style())->setFontSize(12)->setBackgroundColor($striped);
         } else {
-            /** @var Style $style */
-            $style = new Style();
-            $headerStyle = $style
+            $headerStyle = (new Style())
                 ->withFontBold(true)
                 ->withFontSize(12)
                 ->withShouldWrapText(false)
