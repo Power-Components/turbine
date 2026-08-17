@@ -39,6 +39,21 @@ final readonly class ActionsResolver
         return $descriptors;
     }
 
+    public function isRowSelectable(mixed $row, string $forAction = 'checkbox'): bool
+    {
+        $rules = (array) data_get($row, '__turbine_rules', []);
+        $rule = collect($rules)
+            ->where('apply', true)
+            ->where('forAction', $forAction)
+            ->last();
+
+        if ($rule === null) {
+            return true;
+        }
+
+        return ! ((bool) data_get($rule, 'hide') || (bool) data_get($rule, 'disable'));
+    }
+
     /**
      * @param  list<BaseRule>  $rules
      * @return array<string, mixed>
@@ -82,8 +97,8 @@ final readonly class ActionsResolver
             'tag' => $button->tag,
             'visible' => $visible,
             'disabled' => isset($attributes['disabled']),
-            'confirm' => $button->confirm,
-            'confirmPrompt' => $button->confirmIsPrompt,
+            'confirm' => $button->confirm ?? data_get($button->attributes, 'wire:confirm'),
+            'confirmPrompt' => $button->confirmIsPrompt || isset($button->attributes['wire:confirm.prompt']),
             'event' => $button->eventMeta ?: null,
             'attributes' => $this->publicAttributes($attributes),
         ];

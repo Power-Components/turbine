@@ -15,6 +15,8 @@ It runs **search, filters, sort, pagination and row transformation** over Eloque
 - [The request contract](#the-request-contract-what-your-front-end-sends)
 - [The response envelope](#the-response-envelope-what-you-get-back)
 - [Actions](#actions)
+- [Exporting Data](#exporting-data)
+- [State Persistence](#state-persistence)
 - [Building blocks](#building-blocks)
 - [Reusing an existing component](#reusing-an-existing-component)
 - [Lower-level API](#lower-level-api)
@@ -360,6 +362,117 @@ use PowerComponents\Turbine\Components\Rules\{RuleCheckbox, RuleRadio, RuleToggl
     ->when(fn (User $u) => $u->is_locked)
     ->disable();
 ```
+
+## Exporting Data
+
+Turbine features a centralized, high-performance `ExportEngine` (`PowerComponents\Turbine\Export\ExportEngine`) capable of generating CSV and Excel (XLSX) binary files directly from your grid context while respecting active search, filters, sorting, and row selections.
+
+### Requirements for Excel (XLSX)
+
+For Excel (`.xlsx`) file export support, install OpenSpout in your application:
+
+```bash
+composer require openspout/openspout
+```
+
+*Note: CSV export works out-of-the-box using OpenSpout when installed, or native PHP streaming as a fallback.*
+
+### Exporting in Controllers (Inertia, API, or Custom Routes)
+
+To handle exports, create a controller action that passes the grid context to `ExportEngine::build()` and streams the generated file response:
+
+```php
+use App\Models\User;
+use Illuminate\Http\Request;
+use PowerComponents\Turbine\Export\ExportEngine;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+
+class UserGridController
+{
+    public function export(Request $request, ExportEngine $exportEngine): BinaryFileResponse
+    {
+        // 1. Build grid context with filters/search applied from request
+        $turbine = $this->turbine($request);
+
+        // 2. Select export format ('xlsx' or 'csv')
+        $type = strtolower($request->input('export_type', 'xlsx'));
+        $fileName = 'users_export_' . now()->format('Y-m-d_His');
+
+        // 3. Build export file via ExportEngine
+        $filePath = $exportEngine->build(
+            context: $turbine->context(),
+            exportType: $type,
+            fileName: $fileName,
+            exportOptions: [
+                'stripTags' => true,
+                'csvSeparator' => ',',
+                'csvDelimiter' => '"',
+                'selectedKeys' => (array) $request->input('selected', []),
+            ],
+            selected: $request->boolean('is_selected', false)
+        );
+
+        // 4. Return binary file download response
+        return response()->download(
+            $filePath,
+            $fileName . '.' . ($type === 'csv' ? 'csv' : 'xlsx')
+        )->deleteFileAfterSend(true);
+    }
+}
+```
+
+### Export Options Reference
+
+| Option | Type | Description |
+|---|---|---|
+| `context` | `Context` | Grid context instance (`$turbine->context()` or `ArrayGridContext`). |
+| `exportType` | `string` | Export format: `'xlsx'`, `'xls'`, or `'csv'`. |
+| `fileName` | `string` | Base file name stored in `storage_path()`. |
+| `exportOptions` | `array\|Exportable` | Configurations such as `stripTags`, `csvSeparator`, `csvDelimiter`, and `selectedKeys`. |
+| `selected` | `bool` | Set to `true` to export only the rows specified in `selectedKeys`. |
+
+---
+
+## State Persistence
+
+Turbine includes `StatePersister` (`PowerComponents\Turbine\Support\State\StatePersister`) to serialize and manage grid state across requests without relying on front-end query strings or local storage.
+
+### Supported Drivers
+
+- **Cookies** (default)
+- **Session** (`session`)
+- **Cache** (`cache`)
+
+### Usage Example
+
+```php
+use PowerComponents\Turbine\Support\State\StatePersister;
+
+$persister = new StatePersister();
+$key = $persister->getPersistKeyName(tableName: 'users');
+
+// 1. Serialize grid state
+$jsonState = $persister->serializeState(
+    persistItems: ['columns', 'filters', 'sorting'],
+    tableItem: 'users',
+    columns: $columns,
+    filters: $filters,
+    enabledFilters: $enabledFilters,
+    filterBuilder: [],
+    sortField: 'name',
+    sortDirection: 'asc',
+    sortArray: [],
+    multiSort: false
+);
+
+// 2. Save state to a driver ('cookies', 'session', 'cache')
+$persister->save(key: $key, jsonState: $jsonState, driver: 'session');
+
+// 3. Retrieve stored state
+$storedState = $persister->retrieve(key: $key, driver: 'session');
+```
+
+---
 
 ## Building blocks
 

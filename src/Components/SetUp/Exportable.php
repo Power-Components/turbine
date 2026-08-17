@@ -26,9 +26,6 @@ class Exportable implements Definition
 
     public bool $deleteFileAfterSend = true;
 
-    /** @var array<string, mixed> */
-    public array $batchExport = [];
-
     public bool $stripTags = false;
 
     /** @var array<string, mixed> */
@@ -37,12 +34,6 @@ class Exportable implements Definition
     public string $disk = 'local';
 
     public string $directory = '';
-
-    public string $batchName = 'Turbine batch export';
-
-    public string $jobClass = '';
-
-    public ?string $progressView = null;
 
     public function __construct(public string $fileName = 'export') {}
 
@@ -87,62 +78,6 @@ class Exportable implements Definition
     public function deleteFileAfterSend(bool $deleteFileAfterSend = true): self
     {
         $this->deleteFileAfterSend = $deleteFileAfterSend;
-
-        return $this;
-    }
-
-    public function queues(string $queues): self
-    {
-        $batchExport = $this->batchExport;
-        data_set($batchExport, 'queues', $queues);
-        /** @var array<string, mixed> $batchExport */
-        $this->batchExport = $batchExport;
-
-        return $this;
-    }
-
-    public function onQueue(string $onQueue): self
-    {
-        $batchExport = $this->batchExport;
-        data_set($batchExport, 'onQueue', $onQueue);
-        /** @var array<string, mixed> $batchExport */
-        $this->batchExport = $batchExport;
-
-        return $this;
-    }
-
-    public function onConnection(string $connection): self
-    {
-        $batchExport = $this->batchExport;
-        data_set($batchExport, 'onConnection', $connection);
-        /** @var array<string, mixed> $batchExport */
-        $this->batchExport = $batchExport;
-
-        return $this;
-    }
-
-    public function batchName(string $name): self
-    {
-        $this->batchName = $name;
-
-        return $this;
-    }
-
-    /** @param  class-string  $jobClass */
-    public function jobClass(string $jobClass): self
-    {
-        $this->jobClass = $jobClass;
-
-        return $this;
-    }
-
-    /**
-     * Opt-in batch-export progress UI. Turbine ships no progress view by
-     * default; pass your own Blade view name (it receives $exportState).
-     */
-    public function progressView(?string $view): self
-    {
-        $this->progressView = $view;
 
         return $this;
     }

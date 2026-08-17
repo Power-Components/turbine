@@ -92,7 +92,7 @@ it('interacts with ArrayGridContext methods', function () {
         actionRulesResolver: fn ($row) => ['rule_1']
     );
 
-    expect($context->state())->toBe($state)
+    expect($context->state())->toEqual($state->withColumns($columns))
         ->and($context->fields())->toBe($fields)
         ->and($context->datasource())->toBe(['user1', 'user2'])
         ->and($context->declaredColumns())->toBe($columns)
@@ -133,4 +133,20 @@ it('supports delayed closure resolution for columns in ArrayGridContext', functi
     $cols = $context->declaredColumns();
     expect($context->hasResolvedColumns())->toBeTrue()
         ->and($cols)->toHaveCount(1);
+});
+
+it('auto-hydrates declared columns into state on initial request when state columns are empty', function () {
+    $initialState = new State();
+    $columns = [Column::make('Name', 'name'), Column::make('Price', 'price')];
+
+    $context = new ArrayGridContext(
+        state: $initialState,
+        datasourceResolver: fn () => [],
+        fields: new Fields(),
+        columns: $columns
+    );
+
+    expect($initialState->columns)->toBeEmpty();
+    expect($context->state()->columns)->toHaveCount(2)
+        ->and($context->state()->columns[0]->field)->toBe('name');
 });

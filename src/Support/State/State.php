@@ -39,6 +39,31 @@ final readonly class State
         return $this->primaryKeyAlias ?? $this->primaryKey;
     }
 
+    /** @param list<mixed> $columns */
+    public function withColumns(array $columns): self
+    {
+        return new self(
+            search: $this->search,
+            sortField: $this->sortField,
+            sortDirection: $this->sortDirection,
+            multiSort: $this->multiSort,
+            sortArray: $this->sortArray,
+            filters: $this->filters,
+            filterBuilder: $this->filterBuilder,
+            softDeletes: $this->softDeletes,
+            setUp: $this->setUp,
+            columns: $columns,
+            primaryKey: $this->primaryKey,
+            primaryKeyAlias: $this->primaryKeyAlias,
+            ignoreTablePrefix: $this->ignoreTablePrefix,
+            pruneHiddenColumns: $this->pruneHiddenColumns,
+            paginateRaw: $this->paginateRaw,
+            isExporting: $this->isExporting,
+            tableName: $this->tableName,
+            supportModel: $this->supportModel,
+        );
+    }
+
     /** @param  array<string, mixed>  $payload */
     public static function fromArray(array $payload): self
     {

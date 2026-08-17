@@ -60,6 +60,10 @@ final class ArrayGridContext implements Context
 
     public function state(): State
     {
+        if (empty($this->state->columns) && ! empty($declared = $this->declaredColumns())) {
+            return $this->state->withColumns($declared);
+        }
+
         return $this->state;
     }
 
