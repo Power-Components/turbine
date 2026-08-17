@@ -78,3 +78,25 @@ it('produces a JSON response', function () {
     expect($response->getStatusCode())->toBe(200)
         ->and($response->headers->get('content-type'))->toContain('application/json');
 });
+
+it('omits filters and actions keys when they are empty', function () {
+    $context = new ArrayGridContext(
+        state: State::fromArray([
+            'primaryKey' => 'id',
+            'tableName' => 'dishes',
+        ]),
+        datasourceResolver: fn () => Dish::query(),
+        fields: (new Fields())->add('id')->add('name'),
+        columns: [
+            Column::add()->title('Id')->field('id'),
+        ],
+        filters: [],
+        actionsResolver: fn ($row) => [],
+    );
+
+    $envelope = Response::make($context)->toArray();
+
+    expect($envelope)->not->toHaveKey('filters')
+        ->and($envelope)->not->toHaveKey('actions')
+        ->and($envelope)->toHaveKeys(['data', 'meta', 'columns']);
+});

@@ -21,7 +21,7 @@ final readonly class Response
     }
 
     /**
-     * @return array{data: list<array<string, mixed>>, meta: array<string, mixed>, columns: list<array<string, mixed>>, filters: list<array<string, mixed>>, actions: array<string, list<array<string, mixed>>>}
+     * @return array{data: list<array<string, mixed>>, meta: array<string, mixed>, columns: list<array<string, mixed>>, filters?: list<array<string, mixed>>, actions?: array<string, list<array<string, mixed>>>}
      *
      * @throws \Throwable
      */
@@ -51,13 +51,23 @@ final readonly class Response
             }
         }
 
-        return [
+        $response = [
             'data' => $data,
             'meta' => $this->meta($results),
             'columns' => $this->columnsSchema(),
-            'filters' => $this->filtersSchema(),
-            'actions' => $actions,
         ];
+
+        $filters = $this->filtersSchema();
+
+        if ($filters !== []) {
+            $response['filters'] = $filters;
+        }
+
+        if ($actions !== []) {
+            $response['actions'] = $actions;
+        }
+
+        return $response;
     }
 
     public function toResponse(): JsonResponse
