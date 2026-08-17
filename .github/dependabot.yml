@@ -2,10 +2,10 @@ version: 2
 updates:
   - package-ecosystem: "composer"
     directory: "/"
-    target-branch: "5.x"
     schedule:
-      interval: "monthly"
-      time: "22:00"
+      interval: "weekly"
+    cooldown:
+      default-days: 3
     open-pull-requests-limit: 5
     labels:
       - "dependencies"
@@ -13,9 +13,10 @@ updates:
 
   - package-ecosystem: "github-actions"
     directory: "/"
-    target-branch: "5.x"
     schedule:
       interval: "weekly"
+    cooldown:
+      default-days: 3
     open-pull-requests-limit: 5
     labels:
       - "dependencies"
