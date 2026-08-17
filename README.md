@@ -2,7 +2,7 @@
 
 The framework-agnostic data engine behind the Turbine table component.
 
-It runs **search, filters, sort, pagination and row transformation** over Eloquent, the Query Builder, Collections or Scout, and returns a plain **JSON envelope**. There is no Blade and no JavaScript in the box — so the same engine can feed an Inertia (React / Vue) page, a SPA talking to a JSON API, or a plain AJAX table.
+It runs **search, filters, sort, pagination and row transformation** over Eloquent, the Query Builder, Collections or Scout, and returns a plain **JSON envelope**. There is no Blade and no JavaScript in the box — so the same engine can feed an Inertia (React / Vue) page, a Livewire component, a SPA talking to a JSON API, or a plain AJAX table.
 
 > **You describe the grid once in PHP. The engine does the work. Your front-end just renders the JSON.**
 
@@ -20,6 +20,7 @@ It runs **search, filters, sort, pagination and row transformation** over Eloque
 - [Building blocks](#building-blocks)
 - [Reusing an existing component](#reusing-an-existing-component)
 - [Lower-level API](#lower-level-api)
+- [Credits](#credits)
 - [License](#license)
 
 ## Requirements
@@ -153,8 +154,8 @@ Prefer the raw array (e.g. an Inertia prop)? Use `->toArray()` instead of `->toR
                  ?turbine[...] + ?page
 Front-end  ───────────────────────────────▶  Turbine (your PHP definition)
 (React/Vue/                                        │
- fetch/axios)                                      ▼
-                                                Turbine engine
+ Livewire/                                         ▼
+ fetch/axios)                                   Turbine engine
                                      search · filter · sort · paginate · transform
                                                    │
            JSON envelope { data, meta, columns, filters, actions }
@@ -764,6 +765,10 @@ $envelope = Response::make($context)->toArray();
 ```
 
 `Context` is the single interface the engine consumes; `ArrayGridContext` is the headless implementation. Implement it yourself for anything exotic.
+
+## Credits
+
+This package was originally extracted from versions **6.x** and **7.x** of [Livewire PowerGrid](https://github.com/Power-Components/livewire-powergrid). Credits and special thanks to all developers and contributors who participated in the development of PowerGrid!
 
 ## License
 
