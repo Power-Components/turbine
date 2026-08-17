@@ -27,7 +27,8 @@
         "pestphp/pest": "^4.0 || ^5.0"
     },
     "suggest": {
-        "laravel/scout": "Required to use Laravel Scout as a datasource."
+        "laravel/scout": "Required to use Laravel Scout as a datasource.",
+        "openspout/openspout": "Required to export XLS and CSV (supports v4 and v5)"
     },
     "autoload": {
         "psr-4": {
