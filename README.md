@@ -37,6 +37,8 @@ composer require power-components/turbine
 
 ## Quickstart
 
+> **Note:** The example below demonstrates integration using **Inertia.js**, but Turbine is completely framework-agnostic and can be used with any front-end tool or stack (Blade, Livewire, Vue, React, REST APIs, or plain AJAX).
+
 Everything a front-end needs is described in PHP with the `Turbine` builder. Point it at a datasource, declare fields, columns and filters, feed it the request, and return the envelope:
 
 ```php
