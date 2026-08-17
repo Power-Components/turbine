@@ -45,30 +45,23 @@ class XlsExporter implements ExportDriverInterface
             $defaultStyle = (new Style())->setFontSize(12);
             $grayStyle = (new Style())->setFontSize(12)->setBackgroundColor($striped);
         } else {
-            /** @var dynamic $style */
-            $headerStyle = (new Style())
+            /** @var Style $style */
+            $style = new Style();
+            $headerStyle = $style
                 ->withFontBold(true)
                 ->withFontSize(12)
                 ->withShouldWrapText(false)
                 ->withBackgroundColor('d0d3d8');
-            /** @var dynamic $style */
             $defaultStyle = (new Style())->withFontSize(12);
-            /** @var dynamic $style */
             $grayStyle = (new Style())->withFontSize(12)->withBackgroundColor($striped);
         }
 
         $createRow = function (array $values, Style $style): Row {
             if (method_exists(Row::class, 'fromValuesWithStyle')) {
-                /** @var dynamic $rowClass */
-                $rowClass = Row::class;
-
-                return $rowClass::fromValuesWithStyle($values, $style);
+                return Row::fromValuesWithStyle($values, $style);
             }
 
-            /** @var dynamic $rowClass */
-            $rowClass = Row::class;
-
-            return $rowClass::fromValues($values, $style);
+            return Row::fromValues($values, $style);
         };
 
         /** @var list<bool|\DateInterval|\DateTimeInterface|float|int|string|null> $headerRow */
