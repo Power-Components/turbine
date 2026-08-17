@@ -35,15 +35,45 @@ class XlsExporter implements ExportDriverInterface
 
         $writer->openToFile($filePath);
 
-        $headerStyle = (new Style())
-            ->setFontBold()
-            ->setFontSize(12)
-            ->setShouldWrapText(false)
-            ->setBackgroundColor('d0d3d8');
+        $style = new Style();
+        if (method_exists($style, 'setFontBold')) {
+            $headerStyle = (new Style())
+                ->setFontBold()
+                ->setFontSize(12)
+                ->setShouldWrapText(false)
+                ->setBackgroundColor('d0d3d8');
+            $defaultStyle = (new Style())->setFontSize(12);
+            $grayStyle = (new Style())->setFontSize(12)->setBackgroundColor($striped);
+        } else {
+            /** @var dynamic $style */
+            $headerStyle = (new Style())
+                ->withFontBold(true)
+                ->withFontSize(12)
+                ->withShouldWrapText(false)
+                ->withBackgroundColor('d0d3d8');
+            /** @var dynamic $style */
+            $defaultStyle = (new Style())->withFontSize(12);
+            /** @var dynamic $style */
+            $grayStyle = (new Style())->withFontSize(12)->withBackgroundColor($striped);
+        }
+
+        $createRow = function (array $values, Style $style): Row {
+            if (method_exists(Row::class, 'fromValuesWithStyle')) {
+                /** @var dynamic $rowClass */
+                $rowClass = Row::class;
+
+                return $rowClass::fromValuesWithStyle($values, $style);
+            }
+
+            /** @var dynamic $rowClass */
+            $rowClass = Row::class;
+
+            return $rowClass::fromValues($values, $style);
+        };
 
         /** @var list<bool|\DateInterval|\DateTimeInterface|float|int|string|null> $headerRow */
         $headerRow = (array) $headers;
-        $writer->addRow(Row::fromValues($headerRow, $headerStyle));
+        $writer->addRow($createRow($headerRow, $headerStyle));
 
         foreach ($columnWidth as $column => $width) {
             $colIndex = intval($column) + 1;
@@ -52,15 +82,12 @@ class XlsExporter implements ExportDriverInterface
             }
         }
 
-        $defaultStyle = (new Style())->setFontSize(12);
-        $grayStyle = (new Style())->setFontSize(12)->setBackgroundColor($striped);
-
         foreach ($rows as $key => $row) {
             /** @var list<bool|\DateInterval|\DateTimeInterface|float|int|string|null> $rowValues */
             $rowValues = (array) $row;
             if (count($rowValues) > 0) {
                 $style = ($key % 2 && $striped !== '') ? $grayStyle : $defaultStyle;
-                $writer->addRow(Row::fromValues($rowValues, $style));
+                $writer->addRow($createRow($rowValues, $style));
             }
         }
 
