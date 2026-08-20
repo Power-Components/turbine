@@ -76,6 +76,31 @@ final readonly class Response
     }
 
     /**
+     * @return AbstractPaginator<int|string, array<string, mixed>>
+     */
+    public function toPaginator(): AbstractPaginator
+    {
+        $results = ProcessDataSource::make($this->context)->get()['results'];
+
+        $paginator = $results instanceof AbstractPaginator
+            ? $results
+            : $this->wrapInPaginator($this->items($results));
+
+        return $paginator->through(
+            fn (mixed $item): array => $this->rowToArray(is_object($item) ? $item : (object) $item)
+        );
+    }
+
+    /**
+     * @param  Collection<int, mixed>  $items
+     * @return AbstractPaginator<int, mixed>
+     */
+    private function wrapInPaginator(Collection $items): AbstractPaginator
+    {
+        return new LengthAwarePaginator($items, $items->count(), max($items->count(), 1), 1);
+    }
+
+    /**
      * @return Collection<int, mixed>
      */
     private function items(mixed $results): Collection
@@ -151,7 +176,27 @@ final readonly class Response
             'search' => $state->search,
             'filters' => $state->filters,
             'filterBuilder' => $state->filterBuilder,
+            'setup' => $this->setup(),
         ];
+    }
+
+    /**
+     * @return array<string, array<string, mixed>>
+     */
+    private function setup(): array
+    {
+        $out = [];
+
+        /** @var mixed $config */
+        foreach ($this->context->state()->setUp as $name => $config) {
+            $out[(string) $name] = match (true) {
+                is_object($config) => get_object_vars($config),
+                is_array($config) => $config,
+                default => [],
+            };
+        }
+
+        return $out;
     }
 
     /**

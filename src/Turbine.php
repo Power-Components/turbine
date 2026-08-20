@@ -4,7 +4,9 @@ namespace PowerComponents\Turbine;
 
 use Closure;
 use Illuminate\Http\{JsonResponse, Request};
+use Illuminate\Pagination\AbstractPaginator;
 use PowerComponents\Turbine\Components\Filters\FilterBase;
+use PowerComponents\Turbine\Components\SetUp\{Cache, Detail, Exportable, FilterBuilder, Footer, Header, Responsive};
 use PowerComponents\Turbine\Contracts\DataSourceProcessor;
 use PowerComponents\Turbine\DataSource\DataSourceManager;
 use PowerComponents\Turbine\Support\State\{ArrayGridContext, State};
@@ -66,6 +68,9 @@ final class Turbine
     /** @var array<string, mixed> */
     private array $requestState = [];
 
+    /** @var array<int, object> */
+    private array $setUp = [];
+
     public static function make(): self
     {
         return new self();
@@ -77,10 +82,41 @@ final class Turbine
         app(DataSourceManager::class)->register($processorClass, $prepend);
     }
 
-    /**
-     * The datasource factory: return an Eloquent/Query Builder, a Scout Builder
-     * or a Collection. Called by the engine, so keep it a fresh query.
-     */
+    public static function header(): Header
+    {
+        return new Header();
+    }
+
+    public static function footer(): Footer
+    {
+        return new Footer();
+    }
+
+    public static function detail(): Detail
+    {
+        return new Detail();
+    }
+
+    public static function exportable(string $fileName = 'export'): Exportable
+    {
+        return new Exportable($fileName);
+    }
+
+    public static function cache(): Cache
+    {
+        return new Cache();
+    }
+
+    public static function filterBuilder(): FilterBuilder
+    {
+        return new FilterBuilder();
+    }
+
+    public static function responsive(): Responsive
+    {
+        return new Responsive();
+    }
+
     public function datasource(Closure $resolver): self
     {
         $this->datasourceResolver = $resolver;
@@ -179,11 +215,15 @@ final class Turbine
         return $this;
     }
 
-    /**
-     * Read the grid state (search / sort / filters) from the request under the
-     * given key. The page number is read from `?{pageName}` by the paginator.
-     */
-    public function fromRequest(Request $request, string $key = 'powergrid'): self
+    /** @param  array<int, object>  $setUp */
+    public function setUp(array $setUp): self
+    {
+        $this->setUp = $setUp;
+
+        return $this;
+    }
+
+    public function fromRequest(Request $request, string $key = 'turbine'): self
     {
         $flatKeys = ['search', 'sortField', 'sortDirection', 'filters', 'sortArray', 'softDeletes', 'filterBuilder'];
         $flat = [];
@@ -194,7 +234,7 @@ final class Turbine
         }
 
         /** @var array<string, mixed> $nested */
-        $nested = (array) ($request->input($key) ?? $request->input('powergrid') ?? $request->input('turbine') ?? []);
+        $nested = (array) ($request->input($key) ?? []);
 
         $this->requestState = array_merge($flat, $nested);
 
@@ -202,9 +242,6 @@ final class Turbine
     }
 
     /**
-     * Feed the grid state directly, e.g. from an Inertia JSON body or a queue
-     * job. Same shape as the `turbine` request key.
-     *
      * @param  array<string, mixed>  $state
      */
     public function state(array $state): self
@@ -245,19 +282,41 @@ final class Turbine
         return Response::make($this->context())->toResponse();
     }
 
+    /**
+     * @return AbstractPaginator<int|string, array<string, mixed>>
+     */
+    public function toPaginator(): AbstractPaginator
+    {
+        return Response::make($this->context())->toPaginator();
+    }
+
     private function buildState(): State
     {
-        // Server-owned settings (primaryKey / table / pagination) always win
-        // over anything supplied by the client in the request state.
         return State::fromArray(array_merge($this->requestState, [
-            'primaryKey' => $this->primaryKey,
-            'tableName' => $this->tableName,
-            'setUp' => [
-                'footer' => [
-                    'perPage' => $this->perPage,
-                    'pageName' => $this->pageName,
-                ],
-            ],
+           'primaryKey' => $this->primaryKey,
+           'tableName' => $this->tableName,
+           'setUp' => $this->buildSetUp(),
         ]));
+    }
+
+    /** @return array<string, mixed> */
+    private function buildSetUp(): array
+    {
+        $setUp = [];
+
+        foreach ($this->setUp as $component) {
+            $name = data_get($component, 'name');
+
+            if (is_string($name)) {
+                $setUp[$name] = $component;
+            }
+        }
+
+        $setUp['footer'] = array_merge(
+            ['perPage' => $this->perPage, 'pageName' => $this->pageName],
+            (array) ($setUp['footer'] ?? [])
+        );
+
+        return $setUp;
     }
 }

@@ -2,9 +2,12 @@
 
 namespace PowerComponents\Turbine\Tests\Feature;
 
+use Illuminate\Pagination\LengthAwarePaginator;
 use PowerComponents\Turbine\{Button, Column, Fields, Turbine};
 use PowerComponents\Turbine\Components\Filters\FilterInputText;
 use PowerComponents\Turbine\Components\Rules\RuleActions;
+use PowerComponents\Turbine\Components\SetUp\{Cache, Detail, FilterBuilder, Header, Responsive};
+use PowerComponents\Turbine\Components\SetUp\{Exportable, Footer};
 use PowerComponents\Turbine\Tests\Fixtures\Models\Dish;
 
 function turbineGrid(array $state = []): Turbine
@@ -113,7 +116,55 @@ describe('Turbine builder', function () {
             ->and($response->headers->get('content-type'))->toContain('application/json');
     });
 
+    it('produces a paginator with transformed rows', function () {
+        $paginator = turbineGrid()->toPaginator();
+
+        expect($paginator)->toBeInstanceOf(LengthAwarePaginator::class)
+            ->and($paginator->total())->toBe(Dish::query()->count())
+            ->and($paginator->perPage())->toBe(5)
+            ->and($paginator->items()[0])->toBeArray()
+            ->and($paginator->items()[0])->toHaveKeys(['id', 'name', 'price']);
+    });
+
     it('requires a datasource', function () {
         Turbine::make()->toArray();
     })->throws(\LogicException::class);
+
+    it('emits footer perPage in the setup envelope by default', function () {
+        $envelope = turbineGrid()->toArray();
+
+        expect($envelope['meta']['setup']['footer'])
+            ->toMatchArray(['perPage' => 5, 'pageName' => 'page']);
+    });
+
+    it('builds SetUp components and fields through static factories', function () {
+        expect(Turbine::header())->toBeInstanceOf(Header::class)
+            ->and(Turbine::footer())->toBeInstanceOf(Footer::class)
+            ->and(Turbine::detail())->toBeInstanceOf(Detail::class)
+            ->and(Turbine::exportable('report'))->toBeInstanceOf(Exportable::class)
+            ->and(Turbine::exportable('report')->fileName)->toBe('report')
+            ->and(Turbine::cache())->toBeInstanceOf(Cache::class)
+            ->and(Turbine::filterBuilder())->toBeInstanceOf(FilterBuilder::class)
+            ->and(Turbine::responsive())->toBeInstanceOf(Responsive::class)
+            ->and(Fields::make()->add('id')->fields)->toHaveKey('id');
+    });
+
+    it('serializes declared setUp components into the envelope', function () {
+        $envelope = Turbine::make()
+            ->datasource(fn () => Dish::query())
+            ->fields((new Fields())->add('id')->add('name'))
+            ->columns([Column::make('Id', 'id')])
+            ->tableName('dishes')
+            ->perPage(15)
+            ->setUp([
+                (new Footer())->showPerPage(25, [10, 25, 50]),
+                (new Exportable('dishes'))->type(Exportable::TYPE_CSV),
+            ])
+            ->toArray();
+
+        expect($envelope['meta']['setup']['footer'])
+            ->toMatchArray(['perPage' => 25, 'perPageValues' => [10, 25, 50]])
+            ->and($envelope['meta']['setup']['exportable'])
+            ->toMatchArray(['name' => 'exportable', 'type' => ['csv']]);
+    });
 });

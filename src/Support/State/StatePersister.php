@@ -77,8 +77,8 @@ class StatePersister
         ?string $driver = null,
         ?string $store = null
     ): void {
-        $driver ??= config('livewire-powergrid.persist_driver', 'cookies');
-        $storeName = $store ?? config('livewire-powergrid.persist_driver_store');
+        $driver ??= config('turbine.persist_driver', 'cookies');
+        $storeName = $store ?? config('turbine.persist_driver_store');
         $storeNameStr = is_string($storeName) ? $storeName : null;
 
         match ($driver) {
@@ -96,8 +96,8 @@ class StatePersister
         ?string $driver = null,
         ?string $store = null
     ): ?array {
-        $driver ??= config('livewire-powergrid.persist_driver', 'cookies');
-        $storeName = $store ?? config('livewire-powergrid.persist_driver_store');
+        $driver ??= config('turbine.persist_driver', 'cookies');
+        $storeName = $store ?? config('turbine.persist_driver_store');
         $storeNameStr = is_string($storeName) ? $storeName : null;
 
         /** @var string|null $storage */

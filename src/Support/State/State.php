@@ -128,7 +128,7 @@ final readonly class State
         return $out;
     }
 
-    public static function fromRequest(Request $request, string $key = 'powergrid'): self
+    public static function fromRequest(Request $request, string $key = 'turbine'): self
     {
         $flatKeys = ['search', 'sortField', 'sortDirection', 'filters', 'sortArray', 'softDeletes', 'filterBuilder'];
         $flat = [];
@@ -139,7 +139,7 @@ final readonly class State
         }
 
         /** @var array<string, mixed> $nested */
-        $nested = (array) ($request->input($key) ?? $request->input('powergrid') ?? $request->input('turbine') ?? []);
+        $nested = (array) ($request->input($key) ?? []);
 
         return self::fromArray(array_merge($flat, $nested));
     }

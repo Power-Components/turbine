@@ -11,6 +11,7 @@ It runs **search, filters, sort, pagination, and row transformations** over Eloq
 - [Requirements & Install](#requirements--install)
 - [How it fits together](#how-it-fits-together)
 - [Quickstart](#quickstart)
+- [Portable Grid Definitions](#portable-grid-definitions)
 - [The Request Contract](#the-request-contract)
 - [The Response Envelope](#the-response-envelope)
 - [Actions & Rules](#actions--rules)
@@ -102,8 +103,69 @@ Route::get('/users/grid', UserGridController::class);
 | `actionRules(Closure)` | `fn ($row) => Rule[]` — conditional rules per row/action/cell. |
 | `relationSearch(array)` | Search across relations, e.g. `['category' => ['name']]`. |
 | `fromRequest(Request)` | Reads state from the `turbine` request parameter. |
+| `setUp(array)` | List of SetUp components (`Header`, `Footer`, `Detail`, `Exportable`, …) serialized under `meta.setup`. |
 | `state(array)` | Sets state from a raw array (Inertia JSON body, tests, etc.). |
 | `toArray()` / `toResponse()` | Output as array or `JsonResponse`. |
+
+## Portable Grid Definitions
+
+The builder is fluent, but you can also describe a grid as a **single framework-neutral class** by extending `GridDefinition`. The same class drives an Inertia controller, a REST endpoint, or a Livewire PowerGrid component — write it once, switch front-ends without rewriting the grid.
+
+```php
+use PowerComponents\Turbine\{GridDefinition, Column, Fields, Turbine};
+
+class UsersGrid extends GridDefinition
+{
+    public string $tableName = 'users';
+
+    public int $perPage = 10;
+
+    public function datasource(): mixed
+    {
+        return User::query();
+    }
+
+    public function fields(): Fields
+    {
+        return Fields::make()->add('id')->add('name')->add('email');
+    }
+
+    public function columns(): array
+    {
+        return [
+            Column::make('ID', 'id')->sortable(),
+            Column::make('Name', 'name')->searchable()->sortable(),
+        ];
+    }
+
+    public function setUp(): array
+    {
+        return [Turbine::footer()->showPerPage(10, [10, 25, 50])];
+    }
+}
+```
+
+Build fields and SetUp components with the static factories — `Fields::make()` and `Turbine::header() / footer() / detail() / exportable($file) / cache() / filterBuilder() / responsive()`. These are the **same construction calls** the Livewire PowerGrid facade exposes (`PowerGrid::footer()`), so a definition reads identically on both stacks.
+
+Consume it from an Inertia controller:
+
+```php
+public function __invoke(Request $request)
+{
+    $grid = new UsersGrid();
+
+    return Inertia::render('users', [
+        'columns' => fn () => $grid->columns(),
+        'grid' => fn () => $grid->toArray($request),
+    ]);
+}
+```
+
+Every builder option has a matching overridable method — `datasource`, `fields`, `columns`, `filters`, `actions`, `actionRules`, `relationSearch`, `searchMorphs`, `transformQuery`, `setUp` — plus the `$tableName`, `$primaryKey`, `$perPage`, `$pageName` properties. `toArray($request)`, `toResponse($request)` and `context($request)` (for [exporting](#exporting-data)) feed the request in for you. Only `datasource()` is required.
+
+The class implements `PowerComponents\Turbine\Contracts\GridSchema`, the shared declaration surface both Turbine and Livewire PowerGrid understand.
+
+> **Migrating between Livewire and Inertia?** Keep the `UsersGrid` class untouched and swap only the adapter. Inertia calls `->toArray($request)`; a Livewire PowerGrid component points its `definition()` at the same class (see the [PowerGrid README](https://github.com/Power-Components/livewire-powergrid#reusing-a-grid-definition)). Columns, fields, filters, actions and setUp are identical on both sides — the difference is purely the wiring.
 
 ## The Request Contract
 
@@ -130,7 +192,8 @@ Grid state is passed via the `turbine` query parameter and standard `page`:
     "pagination": { "current_page": 1, "per_page": 15, "total": 84, "last_page": 6 },
     "sort": { "field": "name", "direction": "desc" },
     "search": "ana",
-    "filters": { "input_text": { "name": "ana" } }
+    "filters": { "input_text": { "name": "ana" } },
+    "setup": { "footer": { "name": "footer", "perPage": 10, "perPageValues": [10, 25, 50], "pageName": "page" } }
   },
   "columns": [
     { "field": "name", "title": "Name", "sortable": true, "searchable": true }
