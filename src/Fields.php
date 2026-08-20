@@ -12,6 +12,13 @@ class Fields
     /** @var array<string, Closure> */
     public array $fields = [];
 
+    final public function __construct() {}
+
+    public static function make(): static
+    {
+        return new static();
+    }
+
     /**
      * @return $this
      */

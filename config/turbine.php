@@ -28,4 +28,17 @@ return [
         ScoutBuilderProcessor::class,
         ModelProcessor::class,
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | State Persistence
+    |--------------------------------------------------------------------------
+    |
+    | Driver used to persist grid state (search / sort / filters): 'cookies',
+    | 'session' or 'cache'. The store applies to the 'cache' driver.
+    |
+    */
+    'persist_driver' => 'cookies',
+
+    'persist_driver_store' => null,
 ];
