@@ -2,6 +2,7 @@
 
 namespace PowerComponents\Turbine\Components\SetUp;
 
+use Closure;
 use PowerComponents\Turbine\Contracts\Definition;
 
 class Header implements Definition
@@ -22,21 +23,28 @@ class Header implements Definition
 
     public bool $wireLoading = true;
 
+    /** @var array<string, HeaderElement> */
+    public array $elements = [];
+
     /**
      * @return $this
      *               Show search input into component
      */
-    public function showSearchInput(): Header
+    public function showSearchInput(?Closure $config = null): Header
     {
         $this->searchInput = true;
+
+        $this->element('search', $config);
 
         return $this;
     }
 
-    public function showSoftDeletes(bool $showMessage = true): Header
+    public function showSoftDeletes(bool $showMessage = true, ?Closure $config = null): Header
     {
         $this->softDeletes = true;
         $this->showMessageSoftDeletes = $showMessage;
+
+        $this->element('softDeletes', $config);
 
         return $this;
     }
@@ -44,9 +52,32 @@ class Header implements Definition
     /**
      * default false
      */
-    public function showToggleColumns(): Header
+    public function showToggleColumns(?Closure $config = null): Header
     {
         $this->toggleColumns = true;
+
+        $this->element('toggleColumns', $config);
+
+        return $this;
+    }
+
+    public function filtersToggle(Closure $config): Header
+    {
+        $this->element('filters', $config);
+
+        return $this;
+    }
+
+    public function clearFiltersPill(Closure $config): Header
+    {
+        $this->element('clearFilters', $config);
+
+        return $this;
+    }
+
+    public function searchClearIcon(Closure $config): Header
+    {
+        $this->element('searchClear', $config);
 
         return $this;
     }
@@ -79,5 +110,16 @@ class Header implements Definition
         $this->wireLoading = false;
 
         return $this;
+    }
+
+    private function element(string $key, ?Closure $config): HeaderElement
+    {
+        $element = $this->elements[$key] ??= new HeaderElement($key);
+
+        if ($config instanceof Closure) {
+            $config($element);
+        }
+
+        return $element;
     }
 }

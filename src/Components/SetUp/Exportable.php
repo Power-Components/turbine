@@ -2,10 +2,13 @@
 
 namespace PowerComponents\Turbine\Components\SetUp;
 
+use PowerComponents\Turbine\Concerns\HasTriggerElement;
 use PowerComponents\Turbine\Contracts\Definition;
 
 class Exportable implements Definition
 {
+    use HasTriggerElement;
+
     public const TYPE_XLS = 'xlsx';
 
     public const TYPE_CSV = 'csv';
@@ -35,7 +38,15 @@ class Exportable implements Definition
 
     public string $directory = '';
 
-    public function __construct(public string $fileName = 'export') {}
+    public function __construct(public string $fileName = 'export')
+    {
+        $this->trigger = new HeaderElement($this->triggerKey());
+    }
+
+    protected function triggerKey(): string
+    {
+        return 'export';
+    }
 
     public function type(string ...$types): self
     {

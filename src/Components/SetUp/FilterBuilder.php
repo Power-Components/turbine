@@ -2,10 +2,13 @@
 
 namespace PowerComponents\Turbine\Components\SetUp;
 
+use PowerComponents\Turbine\Concerns\HasTriggerElement;
 use PowerComponents\Turbine\Contracts\Definition;
 
 final class FilterBuilder implements Definition
 {
+    use HasTriggerElement;
+
     public const MATCH_AND = 'and';
 
     public const MATCH_OR = 'or';
@@ -25,6 +28,16 @@ final class FilterBuilder implements Definition
 
     /** @var list<string> */
     public array $except = [];
+
+    public function __construct()
+    {
+        $this->trigger = new HeaderElement($this->triggerKey());
+    }
+
+    protected function triggerKey(): string
+    {
+        return 'filterBuilder';
+    }
 
     public function match(string $match): self
     {
