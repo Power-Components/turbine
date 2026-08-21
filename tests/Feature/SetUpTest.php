@@ -8,7 +8,8 @@ use PowerComponents\Turbine\Components\SetUp\{
     Exportable,
     FilterBuilder,
     Footer,
-    Header
+    Header,
+    HeaderElement
 };
 
 it('configures Header component settings', function () {
@@ -153,4 +154,39 @@ it('configures FilterBuilder component settings', function () {
 
     $builder->maxConditions(0);
     expect($builder->maxConditions)->toBe(1);
+});
+
+it('configures header elements icons and titles', function () {
+    $header = new Header();
+
+    $header->showToggleColumns(fn (HeaderElement $element) => $element->icon('funnel', ['class' => 'size-4'])->title('Columns')->showLabel())
+        ->showSoftDeletes(config: fn (HeaderElement $element) => $element->withoutIcon())
+        ->showSearchInput()
+        ->filtersToggle(fn (HeaderElement $element) => $element->view('custom.filters'))
+        ->clearFiltersPill(fn (HeaderElement $element) => $element->hideLabel())
+        ->searchClearIcon(fn (HeaderElement $element) => $element->icon('x-mark'));
+
+    expect($header->elements['toggleColumns']->icon)->toBe('funnel')
+        ->and($header->elements['toggleColumns']->iconAttributes)->toBe(['class' => 'size-4'])
+        ->and($header->elements['toggleColumns']->title)->toBe('Columns')
+        ->and($header->elements['toggleColumns']->showLabel)->toBeTrue()
+        ->and($header->elements['softDeletes']->iconDisabled)->toBeTrue()
+        ->and($header->elements['search']->icon)->toBe('')
+        ->and($header->elements['search']->showLabel)->toBeNull()
+        ->and($header->elements['filters']->view)->toBe('custom.filters')
+        ->and($header->elements['clearFilters']->showLabel)->toBeFalse()
+        ->and($header->elements['searchClear']->icon)->toBe('x-mark');
+});
+
+it('configures the filter builder and export triggers', function () {
+    $filterBuilder = (new FilterBuilder())->title('Filter')->icon('funnel');
+
+    $exportable = (new Exportable('report'))->trigger(fn (HeaderElement $element) => $element->icon('arrow-down')->showLabel());
+
+    expect($filterBuilder->trigger->title)->toBe('Filter')
+        ->and($filterBuilder->trigger->icon)->toBe('funnel')
+        ->and($filterBuilder->trigger->key)->toBe('filterBuilder')
+        ->and($exportable->trigger->icon)->toBe('arrow-down')
+        ->and($exportable->trigger->showLabel)->toBeTrue()
+        ->and($exportable->trigger->key)->toBe('export');
 });
