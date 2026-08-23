@@ -100,3 +100,10 @@ it('tests Column additional methods and custom sorting', function () {
         ->and($column->template)->toBeTrue()
         ->and($column->sortCallback)->toBeInstanceOf(\Closure::class);
 });
+
+it('sets the header display order on a Button', function () {
+    $button = Button::add('bulk')->order(2);
+
+    expect($button->order)->toBe(2)
+        ->and(Button::add('other')->order)->toBeNull();
+});

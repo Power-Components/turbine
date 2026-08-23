@@ -59,7 +59,17 @@ class Button implements Definition
 
     public bool $confirmIsPrompt = false;
 
+    /** Display order among header buttons (lower renders first; null keeps declaration order). */
+    public ?int $order = null;
+
     public function __construct(public string $action) {}
+
+    public function order(int $order): static
+    {
+        $this->order = $order;
+
+        return $this;
+    }
 
     public static function add(string $action = ''): static
     {
