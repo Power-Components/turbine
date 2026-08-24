@@ -8,7 +8,7 @@ it('serializes state and generates correct key name', function () {
     $persister = new StatePersister();
 
     $key = $persister->getPersistKeyName('users_table', 'custom');
-    expect($key)->toBe('pg:custom-users_table');
+    expect($key)->toContain('pg:custom-users_table');
 
     $json = $persister->serializeState(
         persistItems: ['columns', 'filters', 'sorting'],

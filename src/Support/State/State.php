@@ -75,13 +75,13 @@ final readonly class State
             sortArray: self::asStringMap($payload['sortArray'] ?? []),
             filters: self::asArray($payload['filters'] ?? []),
             filterBuilder: self::asArray($payload['filterBuilder'] ?? []),
-            softDeletes: self::asString($payload['softDeletes'] ?? ''),
+            softDeletes: '',
             setUp: self::asArray($payload['setUp'] ?? []),
             columns: array_values(self::asArray($payload['columns'] ?? [])),
             primaryKey: self::asString($payload['primaryKey'] ?? 'id', 'id'),
             primaryKeyAlias: isset($payload['primaryKeyAlias']) ? self::asString($payload['primaryKeyAlias']) : null,
             ignoreTablePrefix: (bool) ($payload['ignoreTablePrefix'] ?? true),
-            pruneHiddenColumns: (bool) ($payload['pruneHiddenColumns'] ?? true),
+            pruneHiddenColumns: true,
             paginateRaw: (bool) ($payload['paginateRaw'] ?? false),
             isExporting: (bool) ($payload['isExporting'] ?? false),
             tableName: self::asString($payload['tableName'] ?? ''),
@@ -130,7 +130,7 @@ final readonly class State
 
     public static function fromRequest(Request $request, string $key = 'turbine'): self
     {
-        $flatKeys = ['search', 'sortField', 'sortDirection', 'filters', 'sortArray', 'softDeletes', 'filterBuilder'];
+        $flatKeys = ['search', 'sortField', 'sortDirection', 'filters', 'sortArray', 'filterBuilder'];
         $flat = [];
         foreach ($flatKeys as $flatKey) {
             if ($request->has($flatKey)) {

@@ -14,9 +14,9 @@ final class TableCache
     private static string $cachedTableTag = 'turbine_columns_in_';
 
     /** @return array<string, mixed> */
-    public static function getOrCreate(string $tableName, callable $tableColumns): array
+    public static function getOrCreate(string $tableName, callable $tableColumns, ?string $connection = null): array
     {
-        $tag = self::generateTag($tableName);
+        $tag = self::generateTag($connection === null || $connection === '' ? $tableName : $connection.':'.$tableName);
 
         if (Cache::has($tag)) {
             /** @phpstan-ignore-next-line */

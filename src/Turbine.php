@@ -225,7 +225,7 @@ final class Turbine
 
     public function fromRequest(Request $request, string $key = 'turbine'): self
     {
-        $flatKeys = ['search', 'sortField', 'sortDirection', 'filters', 'sortArray', 'softDeletes', 'filterBuilder'];
+        $flatKeys = ['search', 'sortField', 'sortDirection', 'filters', 'sortArray', 'filterBuilder'];
         $flat = [];
         foreach ($flatKeys as $flatKey) {
             if ($request->has($flatKey)) {

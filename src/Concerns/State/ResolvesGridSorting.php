@@ -20,9 +20,7 @@ trait ResolvesGridSorting
     public function isValidSortField(string $sortField): bool
     {
         if (! $this->hasResolvedColumns()) {
-            $fieldKey = str_contains($sortField, '.') ? explode('.', $sortField)[1] : $sortField;
-
-            if (array_key_exists($fieldKey, $this->fields->fields)) {
+            if (array_key_exists($sortField, $this->fields->fields)) {
                 return true;
             }
         }

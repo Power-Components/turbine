@@ -39,6 +39,10 @@ final class Sorting
             return $sortCallback($collection, $direction);
         }
 
+        if (! $this->component->isValidSortField($sortField)) {
+            return $collection;
+        }
+
         $isDescending = $direction === 'desc';
 
         return $collection->sortBy($sortField, SORT_REGULAR, $isDescending);
@@ -61,6 +65,10 @@ final class Sorting
             if ($sortCallback !== null) {
                 $callbackFields[] = ['field' => $sortField, 'direction' => $sortDirection, 'callback' => $sortCallback];
 
+                continue;
+            }
+
+            if (! $this->component->isValidSortField($sortField)) {
                 continue;
             }
 

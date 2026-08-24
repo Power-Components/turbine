@@ -14,7 +14,8 @@ final class SchemaInspector
             $table,
             fn (): array => collect(Schema::connection($connection)->getColumns($table))
                 ->pluck('type', 'name')
-                ->toArray()
+                ->toArray(),
+            $connection
         );
 
         return $types;

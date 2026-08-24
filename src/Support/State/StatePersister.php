@@ -8,11 +8,18 @@ class StatePersister
 {
     public function getPersistKeyName(string $tableName, string $prefix = ''): string
     {
-        if ($prefix !== '') {
-            return 'pg:'.$prefix.'-'.$tableName;
+        $principal = auth()->id();
+
+        if ($principal === null || $principal === '') {
+            $sessionId = session()->getId();
+            $principal = is_string($sessionId) && $sessionId !== '' ? $sessionId : 'shared';
         }
 
-        return 'pg:'.$tableName;
+        if ($prefix !== '') {
+            return 'pg:'.$prefix.'-'.$tableName.'-u'.(string) $principal;
+        }
+
+        return 'pg:'.$tableName.'-u'.(string) $principal;
     }
 
     /**

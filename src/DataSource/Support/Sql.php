@@ -44,6 +44,11 @@ class Sql
         return $likeSyntax[$driverName] ?? 'LIKE';
     }
 
+    private static function sanitizeIdentifier(string $identifier): string
+    {
+        return trim(strval(preg_replace('/[^A-Za-z0-9_.]/', '', $identifier)), '.');
+    }
+
     /**
      * @throws Exception
      */
@@ -62,6 +67,12 @@ class Sql
     {
         if (empty($sortField) || empty($driverName) || empty($driverVersion)) {
             throw new Exception('sortField, driverName and driverVersion must be informed');
+        }
+
+        $sortField = self::sanitizeIdentifier($sortField);
+
+        if ($sortField === '') {
+            throw new Exception('sortField must be a valid SQL identifier');
         }
 
         /*

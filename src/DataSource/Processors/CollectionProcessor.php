@@ -109,7 +109,13 @@ class CollectionProcessor extends DataSourceBase
         }
 
         if ($perPage <= 0) {
-            $perPage = $results->count();
+            $fallback = $results->count();
+
+            if ($maxPerPage > 0 && $fallback > $maxPerPage) {
+                $fallback = $maxPerPage;
+            }
+
+            $perPage = max($fallback, 1);
         }
         /** @var string $pageName */
         $pageName = data_get($this->component->state()->setUp, 'footer.pageName', 'page');

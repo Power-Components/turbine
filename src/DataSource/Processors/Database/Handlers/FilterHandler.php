@@ -56,7 +56,7 @@ class FilterHandler
                             'boolean' => (new Boolean($this->component, $filter))->builder($query, $field, $value),
                             'number' => (new Number($this->component, $filter))->builder($query, $field, $value),
                             'input_text' => (new InputText($this->component, $filter))->builder($query, $field, [
-                                'selected' => $this->validateInputTextOptions($this->component->state()->filters, $field),
+                                'selected' => $this->validateInputTextOptions($this->component->state()->filters, $field, $this->resolveConfiguredOperators($filter)),
                                 'value' => $value,
                                 'searchMorphs' => $this->component->searchMorphs(),
                             ]),

@@ -3,6 +3,7 @@
 namespace PowerComponents\Turbine\Support\State;
 
 use Closure;
+use Illuminate\Database\Eloquent\Builder;
 use PowerComponents\Turbine\{Button, Fields};
 use PowerComponents\Turbine\Components\Filters\FilterBase;
 use PowerComponents\Turbine\Components\Rules\BaseRule;
@@ -127,12 +128,45 @@ final class ArrayGridContext implements Context
 
     public function summariesCacheTag(): string
     {
-        return 'turbine-headless-'.$this->state->tableName;
+        $principal = auth()->id();
+
+        if ($principal === null || $principal === '') {
+            $sessionId = session()->getId();
+            $principal = is_string($sessionId) && $sessionId !== '' ? $sessionId : 'anon';
+        }
+
+        $suffix = (string) $principal;
+
+        try {
+            $query = ($this->datasourceResolver)();
+
+            if ($query instanceof Builder) {
+                $query = $query->toBase();
+            }
+
+            if (is_object($query) && method_exists($query, 'toSql') && method_exists($query, 'getBindings')) {
+                $suffix .= '-'.hash('sha256', $query->toSql().'|'.serialize($query->getBindings()));
+            }
+        } catch (\Throwable) {
+        }
+
+        /** @var mixed $secret */
+        $secret = config('turbine.cache_tag_secret');
+
+        if (! is_string($secret) || $secret === '') {
+            $secret = config('app.key');
+        }
+
+        if (is_string($secret) && $secret !== '') {
+            $suffix = substr(hash_hmac('sha256', $suffix, $secret), 0, 32);
+        }
+
+        return 'turbine-headless-'.$this->state->tableName.'-'.$suffix;
     }
 
     public function summariesCacheKey(): string
     {
-        return md5(json_encode([
+        return hash('sha256', json_encode([
             'search' => $this->state->search,
             'filters' => $this->state->filters,
             'filterBuilder' => $this->state->filterBuilder,

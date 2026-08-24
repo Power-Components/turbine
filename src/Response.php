@@ -139,7 +139,52 @@ final readonly class Response
             }
         }
 
+        $allowed = $this->allowedOutputFields();
+
+        if ($allowed !== null) {
+            $data = array_intersect_key($data, $allowed);
+        }
+
         return $data;
+    }
+
+    /**
+     * @return array<string, bool>|null
+     */
+    private function allowedOutputFields(): ?array
+    {
+        if (! $this->context->hasResolvedColumns()) {
+            return null;
+        }
+
+        $state = $this->context->state();
+        $allowed = [$state->primaryKey => true];
+
+        if (is_string($state->primaryKeyAlias) && $state->primaryKeyAlias !== '') {
+            $allowed[$state->primaryKeyAlias] = true;
+        }
+
+        foreach (array_keys($this->context->fields()->fields) as $fieldKey) {
+            if (is_string($fieldKey) && $fieldKey !== '') {
+                $allowed[$fieldKey] = true;
+            }
+        }
+
+        foreach ($this->context->declaredColumns() as $column) {
+            foreach (['dataField', 'field'] as $key) {
+                $value = data_get($column, $key);
+
+                if (is_string($value) && $value !== '') {
+                    $allowed[$value] = true;
+
+                    if (str_contains($value, '.')) {
+                        $allowed[explode('.', $value)[0]] = true;
+                    }
+                }
+            }
+        }
+
+        return $allowed;
     }
 
     /**

@@ -28,7 +28,7 @@ class SearchHandler implements SearchHandlerContract
             return $query;
         }
 
-        $search = trim(strtolower(htmlspecialchars($searchTerm, ENT_QUOTES | ENT_HTML5, 'UTF-8')));
+        $search = addcslashes(trim(strtolower(htmlspecialchars($searchTerm, ENT_QUOTES | ENT_HTML5, 'UTF-8'))), '\\%_');
         $hasRelationSearch = count($this->component->relationSearch()) && $query instanceof EloquentBuilder;
 
         $query->where(function (EloquentBuilder|QueryBuilder $subQuery) use ($search, $hasRelationSearch) {

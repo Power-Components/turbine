@@ -103,7 +103,7 @@ it('interacts with ArrayGridContext methods', function () {
         ->and($context->actions((object) []))->toBe(['action_button'])
         ->and($context->actionRules((object) []))->toBe(['rule_1'])
         ->and($context->shouldCollectActions())->toBeFalse()
-        ->and($context->summariesCacheTag())->toBe('turbine-headless-users')
+        ->and($context->summariesCacheTag())->toContain('turbine-headless-users')
         ->and($context->transformQuery('base_query'))->toBe('base_query')
         ->and($context->beforeFilterBuilderApply('base_query', []))->toBe('base_query')
         ->and($context->applyBeforeSearch('field', 'term'))->toBe('term');

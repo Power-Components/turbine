@@ -147,10 +147,14 @@ class ExportEngine
             ->when(! empty($filtered), function ($query) use ($property, $filtered) {
                 return $query->whereIn($property('primaryKey'), $filtered);
             })
-            ->when($state->sortField, function ($query) use ($state, $queryOptions) {
+            ->when($state->sortField, function ($query) use ($context, $state, $queryOptions) {
                 $sortField = $queryOptions['sortField'] ?? $state->sortField;
 
                 if (! is_string($sortField)) {
+                    return $query;
+                }
+
+                if (! $context->isValidSortField($sortField)) {
                     return $query;
                 }
 
