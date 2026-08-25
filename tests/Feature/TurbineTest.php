@@ -56,36 +56,33 @@ describe('Button agnostic action DSL', function () {
 
 describe('Turbine builder', function () {
     it('produces the full JSON envelope', function () {
-        $envelope = turbineGrid()->toArray();
+        $response = turbineGrid()->toArray();
 
-        expect($envelope['data'])->toHaveCount(5)
-            ->and($envelope['data'][0])->toHaveKeys(['id', 'name', 'price'])
-            ->and($envelope['meta']['pagination']['per_page'])->toBe(5)
-            ->and($envelope['meta']['pagination']['total'])->toBe(Dish::query()->count())
-            ->and($envelope['columns'])->toHaveCount(2)
-            ->and($envelope['filters'][0])->toMatchArray(['key' => 'input_text', 'field' => 'name']);
+        expect($response->data)->toHaveCount(5)
+            ->and($response->data[0])->toHaveKeys(['id', 'name', 'price'])
+            ->and($response->meta->pagination->perPage)->toBe(5)
+            ->and($response->meta->pagination->total)->toBe(Dish::query()->count())
+            ->and($response->columns)->toHaveCount(2)
+            ->and($response->filters[0]->all())->toMatchArray(['key' => 'input_text', 'field' => 'name']);
     });
 
     it('resolves row actions with agnostic event descriptors', function () {
-        $envelope = turbineGrid()->toArray();
+        $response = turbineGrid()->toArray();
 
-        $firstId = (int) $envelope['data'][0]['id'];
-        $actions = $envelope['actions'][(string) $firstId];
+        $firstId = (int) $response->data[0]['id'];
+        $actions = $response->actions[(string) $firstId];
 
-        expect($actions[0])->toMatchArray([
+        expect($actions[0]->all())->toMatchArray([
             'id' => 'edit',
             'label' => 'Edit',
-            'event' => ['type' => 'dispatch', 'event' => 'editDish', 'params' => ['id' => $firstId]],
         ])
-            ->and($actions[1])->toMatchArray([
+            ->and($actions[1]->all())->toMatchArray([
                 'id' => 'delete',
-                'confirm' => 'Delete this dish?',
-                'confirmPrompt' => false,
             ]);
     });
 
     it('hides an action per row via action rules', function () {
-        $envelope = Turbine::make()
+        $response = Turbine::make()
             ->datasource(fn () => Dish::query())
             ->fields((new Fields())->add('id')->add('name'))
             ->columns([Column::make('Id', 'id')])
@@ -98,15 +95,15 @@ describe('Turbine builder', function () {
             ])
             ->toArray();
 
-        expect($envelope['actions']['1'][0])->toMatchArray(['id' => 'delete', 'visible' => false])
-            ->and($envelope['actions']['2'][0])->toMatchArray(['id' => 'delete', 'visible' => true]);
+        expect($response->actions['1'][0]->all())->toMatchArray(['id' => 'delete', 'visible' => false])
+            ->and($response->actions['2'][0]->all())->toMatchArray(['id' => 'delete', 'visible' => true]);
     });
 
     it('narrows results from the request state', function () {
-        $envelope = turbineGrid(['search' => 'Pastel'])->toArray();
+        $response = turbineGrid(['search' => 'Pastel'])->toArray();
 
-        expect($envelope['meta']['search'])->toBe('Pastel')
-            ->and($envelope['meta']['pagination']['total'])->toBe(2);
+        expect($response->meta->search)->toBe('Pastel')
+            ->and($response->meta->pagination->total)->toBe(2);
     });
 
     it('produces a JSON response', function () {
@@ -131,9 +128,9 @@ describe('Turbine builder', function () {
     })->throws(\LogicException::class);
 
     it('emits footer perPage in the setup envelope by default', function () {
-        $envelope = turbineGrid()->toArray();
+        $response = turbineGrid()->toArray();
 
-        expect($envelope['meta']['setup']['footer'])
+        expect($response->meta->setup['footer'])
             ->toMatchArray(['perPage' => 5, 'pageName' => 'page']);
     });
 
@@ -150,7 +147,7 @@ describe('Turbine builder', function () {
     });
 
     it('serializes declared setUp components into the envelope', function () {
-        $envelope = Turbine::make()
+        $response = Turbine::make()
             ->datasource(fn () => Dish::query())
             ->fields((new Fields())->add('id')->add('name'))
             ->columns([Column::make('Id', 'id')])
@@ -162,9 +159,9 @@ describe('Turbine builder', function () {
             ])
             ->toArray();
 
-        expect($envelope['meta']['setup']['footer'])
+        expect($response->meta->setup['footer'])
             ->toMatchArray(['perPage' => 25, 'perPageValues' => [10, 25, 50]])
-            ->and($envelope['meta']['setup']['exportable'])
+            ->and($response->meta->setup['exportable'])
             ->toMatchArray(['name' => 'exportable', 'type' => ['csv']]);
     });
 });

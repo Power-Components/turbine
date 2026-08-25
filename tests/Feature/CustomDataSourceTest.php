@@ -66,15 +66,15 @@ describe('Custom DataSource Extension', function () {
             ['id' => 2, 'name' => 'Custom Item 2'],
         ];
 
-        $envelope = Turbine::make()
+        $response = Turbine::make()
             ->datasource(fn () => new CustomSearchSource($items))
             ->fields((new Fields())->add('id')->add('name'))
             ->columns([Column::make('Name', 'name')])
             ->toArray();
 
-        expect($envelope['data'])->toHaveCount(2)
-            ->and($envelope['data'][0]['name'])->toBe('Custom Item 1')
-            ->and($envelope['data'][1]['name'])->toBe('Custom Item 2');
+        expect($response->data)->toHaveCount(2)
+            ->and($response->data[0]['name'])->toBe('Custom Item 1')
+            ->and($response->data[1]['name'])->toBe('Custom Item 2');
     });
 
     it('resolves table from custom processor', function () {

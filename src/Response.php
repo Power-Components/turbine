@@ -9,6 +9,7 @@ use Illuminate\Pagination\{AbstractPaginator, LengthAwarePaginator};
 use Illuminate\Support\Collection;
 use PowerComponents\Turbine\Contracts\Context;
 use PowerComponents\Turbine\DataSource\ProcessDataSource;
+use PowerComponents\Turbine\Response\{ColumnSchema, FilterSchema, GridResponse, MetaResponse, PaginationResponse, SortResponse};
 use PowerComponents\Turbine\Support\Actions\ActionsResolver;
 
 final readonly class Response
@@ -21,17 +22,15 @@ final readonly class Response
     }
 
     /**
-     * @return array{data: list<array<string, mixed>>, meta: array<string, mixed>, columns: list<array<string, mixed>>, filters?: list<array<string, mixed>>, actions?: array<string, list<array<string, mixed>>>}
-     *
      * @throws \Throwable
      */
-    public function toArray(): array
+    public function toArray(?ActionsResolver $actionsResolver = null): GridResponse
     {
         $results = ProcessDataSource::make($this->context)->get()['results'];
 
         $items = $this->items($results);
         $primaryKey = $this->context->state()->primaryKey;
-        $actionsResolver = new ActionsResolver($this->context);
+        $actionsResolver ??= new ActionsResolver($this->context);
 
         $data = [];
         $actions = [];
@@ -51,23 +50,15 @@ final readonly class Response
             }
         }
 
-        $response = [
-            'data' => $data,
-            'meta' => $this->meta($results),
-            'columns' => $this->columnsSchema(),
-        ];
-
         $filters = $this->filtersSchema();
 
-        if ($filters !== []) {
-            $response['filters'] = $filters;
-        }
-
-        if ($actions !== []) {
-            $response['actions'] = $actions;
-        }
-
-        return $response;
+        return new GridResponse(
+            data: $data,
+            meta: $this->meta($results),
+            columns: $this->columnsSchema(),
+            filters: $filters !== [] ? $filters : null,
+            actions: $actions !== [] ? $actions : null,
+        );
     }
 
     public function toResponse(): JsonResponse
@@ -187,42 +178,39 @@ final readonly class Response
         return $allowed;
     }
 
-    /**
-     * @return array<string, mixed>
-     */
-    private function meta(mixed $results): array
+    private function meta(mixed $results): MetaResponse
     {
         $state = $this->context->state();
 
-        $pagination = [];
+        $pagination = new PaginationResponse(
+            currentPage: 1,
+            perPage: 1,
+        );
 
         if ($results instanceof AbstractPaginator) {
-            $pagination = [
-                'current_page' => $results->currentPage(),
-                'per_page' => $results->perPage(),
-                'from' => $results->firstItem(),
-                'to' => $results->lastItem(),
-            ];
-
-            if ($results instanceof LengthAwarePaginator) {
-                $pagination['total'] = $results->total();
-                $pagination['last_page'] = $results->lastPage();
-            }
+            $pagination = new PaginationResponse(
+                currentPage: $results->currentPage(),
+                perPage: $results->perPage(),
+                from: $results->firstItem(),
+                to: $results->lastItem(),
+                total: $results instanceof LengthAwarePaginator ? $results->total() : null,
+                lastPage: $results instanceof LengthAwarePaginator ? $results->lastPage() : null,
+            );
         }
 
-        return [
-            'pagination' => $pagination,
-            'sort' => [
-                'field' => $state->sortField,
-                'direction' => $state->sortDirection,
-                'multiSort' => $state->multiSort,
-                'sortArray' => $state->sortArray,
-            ],
-            'search' => $state->search,
-            'filters' => $state->filters,
-            'filterBuilder' => $state->filterBuilder,
-            'setup' => $this->setup(),
-        ];
+        return new MetaResponse(
+            pagination: $pagination,
+            sort: new SortResponse(
+                field: $state->sortField,
+                direction: $state->sortDirection,
+                multiSort: $state->multiSort,
+                sortArray: $state->sortArray,
+            ),
+            search: $state->search,
+            filters: $state->filters,
+            filterBuilder: $state->filterBuilder,
+            setup: $this->setup(),
+        );
     }
 
     /**
@@ -245,7 +233,7 @@ final readonly class Response
     }
 
     /**
-     * @return list<array<string, mixed>>
+     * @return list<ColumnSchema>
      */
     private function columnsSchema(): array
     {
@@ -266,20 +254,20 @@ final readonly class Response
                 continue;
             }
 
-            $schema[] = [
-                'field' => $field,
-                'title' => $this->asString(data_get($column, 'title')),
-                'sortable' => (bool) data_get($column, 'sortable'),
-                'searchable' => (bool) data_get($column, 'searchable'),
-                'hidden' => (bool) data_get($column, 'hidden'),
-            ];
+            $schema[] = new ColumnSchema(
+                field: $field,
+                title: $this->asString(data_get($column, 'title')),
+                sortable: (bool) data_get($column, 'sortable'),
+                searchable: (bool) data_get($column, 'searchable'),
+                hidden: (bool) data_get($column, 'hidden'),
+            );
         }
 
         return $schema;
     }
 
     /**
-     * @return list<array<string, mixed>>
+     * @return list<FilterSchema>
      */
     private function filtersSchema(): array
     {
@@ -292,12 +280,12 @@ final readonly class Response
                 continue;
             }
 
-            $schema[] = [
-                'key' => $this->asString(data_get($filter, 'key')),
-                'field' => $field,
-                'column' => $this->asString(data_get($filter, 'column')),
-                'title' => $this->asString(data_get($filter, 'title')),
-            ];
+            $schema[] = new FilterSchema(
+                key: $this->asString(data_get($filter, 'key')),
+                field: $field,
+                column: $this->asString(data_get($filter, 'column')),
+                title: $this->asString(data_get($filter, 'title')),
+            );
         }
 
         return $schema;

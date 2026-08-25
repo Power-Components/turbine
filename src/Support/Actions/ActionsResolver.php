@@ -6,12 +6,13 @@ use Closure;
 use PowerComponents\Turbine\Button;
 use PowerComponents\Turbine\Components\Rules\BaseRule;
 use PowerComponents\Turbine\Contracts\Context;
+use PowerComponents\Turbine\Response\ActionDescriptor;
 
-final readonly class ActionsResolver
+class ActionsResolver
 {
     public function __construct(private Context $context) {}
 
-    /** @return list<array<string, mixed>> */
+    /** @return list<ActionDescriptor> */
     public function forRow(object $row): array
     {
         if (! method_exists($this->context, 'actions')) {
@@ -33,7 +34,9 @@ final readonly class ActionsResolver
                 continue;
             }
 
-            $descriptors[] = $this->describe($button, $row, $rules);
+            $descriptors[] = $this->createDescriptor(
+                $this->describe($button, $row, $rules),
+            );
         }
 
         return $descriptors;
@@ -54,11 +57,21 @@ final readonly class ActionsResolver
         return ! ((bool) data_get($rule, 'hide') || (bool) data_get($rule, 'disable'));
     }
 
-    /**
-     * @param  list<BaseRule>  $rules
-     * @return array<string, mixed>
-     */
-    private function describe(Button $button, object $row, array $rules): array
+    protected function createDescriptor(DescriptorData $desc): ActionDescriptor
+    {
+        return new ActionDescriptor(
+            id: $desc->id,
+            label: $desc->label,
+            icon: $desc->icon,
+            tag: $desc->tag,
+            visible: $desc->visible,
+            disabled: $desc->disabled,
+            attributes: $desc->attributes,
+        );
+    }
+
+    /** @param  list<BaseRule>  $rules */
+    protected function describe(Button $button, object $row, array $rules): DescriptorData
     {
         $can = $button->can;
         $visible = $can instanceof Closure ? (bool) $can($row) : (bool) $can;
@@ -90,18 +103,21 @@ final readonly class ActionsResolver
             }
         }
 
-        return [
-            'id' => $button->action,
-            'label' => $label,
-            'icon' => $button->icon ?: null,
-            'tag' => $button->tag,
-            'visible' => $visible,
-            'disabled' => isset($attributes['disabled']),
-            'confirm' => $button->confirm ?? data_get($button->attributes, 'wire:confirm'),
-            'confirmPrompt' => $button->confirmIsPrompt || isset($button->attributes['wire:confirm.prompt']),
-            'event' => $button->eventMeta ?: null,
-            'attributes' => $this->publicAttributes($attributes),
-        ];
+        $attributes = $this->publicAttributes($attributes);
+
+        if ($button->eventMeta !== []) {
+            $attributes['event'] = $button->eventMeta;
+        }
+
+        return new DescriptorData(
+            id: $button->action,
+            label: $label,
+            icon: $button->icon ?: null,
+            tag: $button->tag,
+            visible: $visible,
+            disabled: isset($attributes['disabled']),
+            attributes: $attributes,
+        );
     }
 
     private function conditionPasses(BaseRule $rule, object $row): bool
@@ -125,7 +141,7 @@ final readonly class ActionsResolver
      * @param  array<string, mixed>  $attributes
      * @return array<string, mixed>
      */
-    private function publicAttributes(array $attributes): array
+    protected function publicAttributes(array $attributes): array
     {
         $stripped = [];
 

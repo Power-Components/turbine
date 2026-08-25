@@ -83,31 +83,31 @@ describe('GridDefinition', function () {
         $fromDefinition = (new DishGrid())->toArray($request);
         $fromBuilder = equivalentTurbine()->toArray();
 
-        expect($fromDefinition)->toEqual($fromBuilder);
+        expect($fromDefinition->all())->toEqual($fromBuilder->all());
     });
 
     it('produces the full JSON envelope', function () {
-        $envelope = (new DishGrid())->toArray(Request::create('/grid', 'GET'));
+        $response = (new DishGrid())->toArray(Request::create('/grid', 'GET'));
 
-        expect($envelope['data'])->toHaveCount(5)
-            ->and($envelope['data'][0])->toHaveKeys(['id', 'name', 'price'])
-            ->and($envelope['meta']['pagination']['per_page'])->toBe(5)
-            ->and($envelope['columns'])->toHaveCount(2)
-            ->and($envelope['filters'][0])->toMatchArray(['key' => 'input_text', 'field' => 'name']);
+        expect($response->data)->toHaveCount(5)
+            ->and($response->data[0])->toHaveKeys(['id', 'name', 'price'])
+            ->and($response->meta->pagination->perPage)->toBe(5)
+            ->and($response->columns)->toHaveCount(2)
+            ->and($response->filters[0]->all())->toMatchArray(['key' => 'input_text', 'field' => 'name']);
     });
 
     it('flows request state through the definition', function () {
-        $envelope = (new DishGrid())->toArray(Request::create('/grid', 'GET', ['search' => 'Pastel']));
+        $response = (new DishGrid())->toArray(Request::create('/grid', 'GET', ['search' => 'Pastel']));
 
-        expect($envelope['meta']['search'])->toBe('Pastel')
-            ->and($envelope['meta']['pagination']['total'])->toBe(2);
+        expect($response->meta->search)->toBe('Pastel')
+            ->and($response->meta->pagination->total)->toBe(2);
     });
 
     it('resolves actions and action rules per row', function () {
-        $envelope = (new DishGrid())->toArray(Request::create('/grid', 'GET'));
+        $response = (new DishGrid())->toArray(Request::create('/grid', 'GET'));
 
-        expect($envelope['actions']['1'][0])->toMatchArray(['id' => 'edit', 'visible' => false])
-            ->and($envelope['actions']['2'][0])->toMatchArray(['id' => 'edit', 'visible' => true]);
+        expect($response->actions['1'][0]->all())->toMatchArray(['id' => 'edit', 'visible' => false])
+            ->and($response->actions['2'][0]->all())->toMatchArray(['id' => 'edit', 'visible' => true]);
     });
 
     it('produces a paginator with transformed rows', function () {
@@ -144,9 +144,9 @@ describe('GridDefinition', function () {
             }
         };
 
-        $envelope = $grid->toArray(Request::create('/grid', 'GET'));
+        $response = $grid->toArray(Request::create('/grid', 'GET'));
 
-        expect($envelope['meta']['setup']['footer'])
+        expect($response->meta->setup['footer'])
             ->toMatchArray(['perPage' => 50, 'perPageValues' => [50, 100]]);
     });
 });

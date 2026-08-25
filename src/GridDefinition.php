@@ -6,6 +6,7 @@ use Illuminate\Http\{JsonResponse, Request};
 use Illuminate\Pagination\AbstractPaginator;
 use PowerComponents\Turbine\Components\Filters\FilterBase;
 use PowerComponents\Turbine\Contracts\{Context, GridSchema};
+use PowerComponents\Turbine\Response\GridResponse;
 
 abstract class GridDefinition implements GridSchema
 {
@@ -90,8 +91,7 @@ abstract class GridDefinition implements GridSchema
             ->pageName($this->pageName);
     }
 
-    /** @return array{data: list<array<string, mixed>>, meta: array<string, mixed>, columns: list<array<string, mixed>>, filters?: list<array<string, mixed>>, actions?: array<string, list<array<string, mixed>>>} */
-    public function toArray(Request $request): array
+    public function toArray(Request $request): GridResponse
     {
         return $this->toTurbine()->fromRequest($request)->toArray();
     }

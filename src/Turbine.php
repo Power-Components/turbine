@@ -9,6 +9,7 @@ use PowerComponents\Turbine\Components\Filters\FilterBase;
 use PowerComponents\Turbine\Components\SetUp\{Cache, Detail, Exportable, FilterBuilder, Footer, Header, Responsive};
 use PowerComponents\Turbine\Contracts\DataSourceProcessor;
 use PowerComponents\Turbine\DataSource\DataSourceManager;
+use PowerComponents\Turbine\Response\GridResponse;
 use PowerComponents\Turbine\Support\State\{ArrayGridContext, State};
 
 /**
@@ -271,8 +272,7 @@ final class Turbine
         );
     }
 
-    /** @return array{data: list<array<string, mixed>>, meta: array<string, mixed>, columns: list<array<string, mixed>>, filters?: list<array<string, mixed>>, actions?: array<string, list<array<string, mixed>>>} */
-    public function toArray(): array
+    public function toArray(): GridResponse
     {
         return Response::make($this->context())->toArray();
     }
