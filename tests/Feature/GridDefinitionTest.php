@@ -80,14 +80,14 @@ describe('GridDefinition', function () {
     it('produces the same envelope as the equivalent Turbine chain', function () {
         $request = Request::create('/grid', 'GET');
 
-        $fromDefinition = (new DishGrid())->toArray($request);
-        $fromBuilder = equivalentTurbine()->toArray();
+        $fromDefinition = (new DishGrid())->envelope($request);
+        $fromBuilder = equivalentTurbine()->envelope();
 
         expect($fromDefinition->all())->toEqual($fromBuilder->all());
     });
 
     it('produces the full JSON envelope', function () {
-        $response = (new DishGrid())->toArray(Request::create('/grid', 'GET'));
+        $response = (new DishGrid())->envelope(Request::create('/grid', 'GET'));
 
         expect($response->data)->toHaveCount(5)
             ->and($response->data[0])->toHaveKeys(['id', 'name', 'price'])
@@ -97,14 +97,14 @@ describe('GridDefinition', function () {
     });
 
     it('flows request state through the definition', function () {
-        $response = (new DishGrid())->toArray(Request::create('/grid', 'GET', ['search' => 'Pastel']));
+        $response = (new DishGrid())->envelope(Request::create('/grid', 'GET', ['search' => 'Pastel']));
 
         expect($response->meta->search)->toBe('Pastel')
             ->and($response->meta->pagination->total)->toBe(2);
     });
 
     it('resolves actions and action rules per row', function () {
-        $response = (new DishGrid())->toArray(Request::create('/grid', 'GET'));
+        $response = (new DishGrid())->envelope(Request::create('/grid', 'GET'));
 
         expect($response->actions['1'][0]->all())->toMatchArray(['id' => 'edit', 'visible' => false])
             ->and($response->actions['2'][0]->all())->toMatchArray(['id' => 'edit', 'visible' => true]);
@@ -144,7 +144,7 @@ describe('GridDefinition', function () {
             }
         };
 
-        $response = $grid->toArray(Request::create('/grid', 'GET'));
+        $response = $grid->envelope(Request::create('/grid', 'GET'));
 
         expect($response->meta->setup['footer'])
             ->toMatchArray(['perPage' => 50, 'perPageValues' => [50, 100]]);

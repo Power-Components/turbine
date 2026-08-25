@@ -2,7 +2,7 @@
 
 The framework-agnostic data engine behind the Turbine table component.
 
-It runs **search, filters, sort, pagination, and row transformations** over Eloquent, Query Builder, Collections, or Scout, and returns a plain **JSON envelope**. There is no Blade and no JavaScript in the box — feed Inertia (React / Vue), Livewire, REST APIs, or plain AJAX with the exact same engine.
+It runs **search, filters, sort, pagination, and row transformations** over Eloquent, Query Builder, Collections, or Scout, and returns a typed **JSON envelope**. There is no Blade and no JavaScript in the box — feed Inertia (React / Vue), Livewire, REST APIs, or plain AJAX with the exact same engine.
 
 > **You describe the grid once in PHP. The engine does the rest. Your front-end just renders JSON.**
 
@@ -61,7 +61,8 @@ class UserGridController
 {
     public function __invoke(Request $request)
     {
-        return Turbine::make()
+        /** @var \PowerComponents\Turbine\Response\GridResponse $envelope */
+        $envelope = Turbine::make()
             ->datasource(fn () => User::query())
             ->fields(
                 (new Fields())
@@ -81,7 +82,16 @@ class UserGridController
                 Button::add('edit')->slot('Edit')->route('users.edit', ['user' => $user->id]),
             ])
             ->fromRequest($request)
-            ->toArray(); // or ->toResponse() for JsonResponse
+            ->envelope(); // typed GridResponse — or ->toArray() for plain array, ->toResponse() for JsonResponse
+
+        // Typed access
+        // $envelope->data;                // array<int, array<string, mixed>>
+        // $envelope->meta->pagination;    // PaginationResponse
+        // $envelope->meta->sort;          // SortResponse
+        // $envelope->meta->search;        // ?string
+        // $envelope->columns;             // list<ColumnSchema>
+        // $envelope->filters;             // ?list<FilterSchema>
+        // $envelope->actions;             // ?array<string, list<ActionDescriptor>>
     }
 }
 ```
@@ -105,7 +115,7 @@ Route::get('/users/grid', UserGridController::class);
 | `fromRequest(Request)` | Reads state from the `turbine` request parameter. |
 | `setUp(array)` | List of SetUp components (`Header`, `Footer`, `Detail`, `Exportable`, …) serialized under `meta.setup`. |
 | `state(array)` | Sets state from a raw array (Inertia JSON body, tests, etc.). |
-| `toArray()` / `toResponse()` | Output as array or `JsonResponse`. |
+| `toArray()` / `envelope()` / `toResponse()` | Returns `array`, `GridResponse`, or `JsonResponse`. |
 
 ## Portable Grid Definitions
 
@@ -156,16 +166,16 @@ public function __invoke(Request $request)
 
     return Inertia::render('users', [
         'columns' => fn () => $grid->columns(),
-        'grid' => fn () => $grid->toArray($request),
+        'grid' => fn () => $grid->envelope($request),
     ]);
 }
 ```
 
-Every builder option has a matching overridable method — `datasource`, `fields`, `columns`, `filters`, `actions`, `actionRules`, `relationSearch`, `searchMorphs`, `transformQuery`, `setUp` — plus the `$tableName`, `$primaryKey`, `$perPage`, `$pageName` properties. `toArray($request)`, `toResponse($request)` and `context($request)` (for [exporting](#exporting-data)) feed the request in for you. Only `datasource()` is required.
+Every builder option has a matching overridable method — `datasource`, `fields`, `columns`, `filters`, `actions`, `actionRules`, `relationSearch`, `searchMorphs`, `transformQuery`, `setUp` — plus the `$tableName`, `$primaryKey`, `$perPage`, `$pageName` properties. `envelope($request)`, `toArray($request)`, `toResponse($request)` and `context($request)` (for [exporting](#exporting-data)) feed the request in for you. Only `datasource()` is required.
 
 The class implements `PowerComponents\Turbine\Contracts\GridSchema`, the shared declaration surface both Turbine and Livewire PowerGrid understand.
 
-> **Migrating between Livewire and Inertia?** Keep the `UsersGrid` class untouched and swap only the adapter. Inertia calls `->toArray($request)`; a Livewire PowerGrid component points its `definition()` at the same class (see the [PowerGrid README](https://github.com/Power-Components/livewire-powergrid#reusing-a-grid-definition)). Columns, fields, filters, actions and setUp are identical on both sides — the difference is purely the wiring.
+> **Migrating between Livewire and Inertia?** Keep the `UsersGrid` class untouched and swap only the adapter. Inertia calls `->envelope($request)` (or `->toArray($request)` for a plain array); a Livewire PowerGrid component points its `definition()` at the same class (see the [PowerGrid README](https://github.com/Power-Components/livewire-powergrid#reusing-a-grid-definition)). Columns, fields, filters, actions and setUp are identical on both sides — the difference is purely the wiring.
 
 ## The Request Contract
 
@@ -173,7 +183,7 @@ Grid state (search, sort, filters) is read from the `turbine` query parameter on
 
 ## The Response Envelope
 
-`->toArray()` or `->toResponse()` returns a structured JSON payload:
+`->envelope()` returns a `GridResponse` DTO. `->toArray()` returns a plain `array`. `->toResponse()` wraps it in a `JsonResponse`. All properties are typed:
 
 ```jsonc
 {
@@ -188,18 +198,42 @@ Grid state (search, sort, filters) is read from the `turbine` query parameter on
     "setup": { "footer": { "name": "footer", "perPage": 10, "perPageValues": [10, 25, 50], "pageName": "page" } }
   },
   "columns": [
-    { "field": "name", "title": "Name", "sortable": true, "searchable": true }
+    { "field": "name", "title": "Name", "sortable": true, "searchable": true, "hidden": false }
   ],
   "filters": [
-    { "key": "input_text", "field": "name", "column": "name" }
+    { "key": "input_text", "field": "name", "column": "name", "title": null }
   ],
   "actions": {
     "1": [
-      { "id": "edit", "label": "Edit", "visible": true, "disabled": false, "event": { "type": "link", "href": "/users/1/edit" } }
+      {
+        "id": "edit",
+        "label": "Edit",
+        "icon": null,
+        "tag": "button",
+        "visible": true,
+        "disabled": false,
+        "attributes": {
+          "event": { "type": "link", "href": "/users/1/edit" }
+        }
+      }
     ]
   }
 }
 ```
+
+### DTO classes
+
+| Class | Key properties |
+|---|---|
+| `GridResponse` | `data`, `meta`, `columns`, `filters`, `actions` |
+| `MetaResponse` | `pagination`, `sort`, `search`, `filters`, `filterBuilder`, `setup` |
+| `PaginationResponse` | `currentPage`, `perPage`, `from`, `to`, `total`, `lastPage` |
+| `SortResponse` | `field`, `direction`, `multiSort`, `sortArray` |
+| `ColumnSchema` | `field`, `title`, `sortable`, `searchable`, `hidden` |
+| `FilterSchema` | `key`, `field`, `column`, `title` |
+| `ActionDescriptor` | `id`, `label`, `icon`, `tag`, `visible`, `disabled`, `attributes` |
+
+Every DTO implements `JsonSerializable` and exposes `->all()` for array access.
 
 ## Actions & Rules
 
@@ -210,7 +244,20 @@ Button::add('edit')->slot('Edit')->route('users.edit', ['user' => $user->id]);
 Button::add('delete')->slot('Delete')->dispatch('deleteUser', ['id' => $user->id])->confirm('Are you sure?');
 ```
 
-Event types sent to client: `link`, `dispatch`, `dispatchTo`, `dispatchSelf`, `modal`, `toggleDetail`, `call`.
+The `ActionDescriptor` resolves into the `attributes` bag:
+
+```php
+$descriptor = $actions[0];
+
+$descriptor->id;                     // 'edit'
+$descriptor->label;                  // 'Edit'
+$descriptor->visible;                // true
+$descriptor->attributes['event'];    // ['type' => 'dispatch', 'event' => 'deleteUser', 'params' => ['id' => 1]]
+$descriptor->attributes['wire:confirm']; // 'Are you sure?' (Livewire)
+$descriptor->attributes['wire:click'];   // '$dispatch(...)'  (Livewire)
+```
+
+Event types: `link`, `dispatch`, `dispatchTo`, `dispatchSelf`, `modal`, `toggleDetail`, `call`.
 
 ### Conditional Rules
 
@@ -351,7 +398,8 @@ $context = new ArrayGridContext(
     columns: $columns,
 );
 
-$envelope = Response::make($context)->toArray();
+/** @var \PowerComponents\Turbine\Response\GridResponse $envelope */
+$envelope = Response::make($context)->envelope();
 ```
 
 ## Credits

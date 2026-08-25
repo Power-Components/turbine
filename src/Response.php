@@ -24,7 +24,7 @@ final readonly class Response
     /**
      * @throws \Throwable
      */
-    public function toArray(?ActionsResolver $actionsResolver = null): GridResponse
+    public function envelope(?ActionsResolver $actionsResolver = null): GridResponse
     {
         $results = ProcessDataSource::make($this->context)->get()['results'];
 
@@ -61,9 +61,17 @@ final readonly class Response
         );
     }
 
-    public function toResponse(): JsonResponse
+    /**
+     * @return array<string, mixed>
+     */
+    public function toArray(?ActionsResolver $actionsResolver = null): array
     {
-        return new JsonResponse($this->toArray());
+        return $this->envelope($actionsResolver)->all();
+    }
+
+    public function toResponse(?ActionsResolver $actionsResolver = null): JsonResponse
+    {
+        return new JsonResponse($this->envelope($actionsResolver));
     }
 
     /**

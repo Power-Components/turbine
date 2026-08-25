@@ -56,7 +56,7 @@ describe('Button agnostic action DSL', function () {
 
 describe('Turbine builder', function () {
     it('produces the full JSON envelope', function () {
-        $response = turbineGrid()->toArray();
+        $response = turbineGrid()->envelope();
 
         expect($response->data)->toHaveCount(5)
             ->and($response->data[0])->toHaveKeys(['id', 'name', 'price'])
@@ -67,7 +67,7 @@ describe('Turbine builder', function () {
     });
 
     it('resolves row actions with agnostic event descriptors', function () {
-        $response = turbineGrid()->toArray();
+        $response = turbineGrid()->envelope();
 
         $firstId = (int) $response->data[0]['id'];
         $actions = $response->actions[(string) $firstId];
@@ -93,14 +93,14 @@ describe('Turbine builder', function () {
             ->actionRules(fn ($row) => [
                 (new RuleActions('delete'))->when(fn ($r) => (int) $r->id === 1)->hide(),
             ])
-            ->toArray();
+            ->envelope();
 
         expect($response->actions['1'][0]->all())->toMatchArray(['id' => 'delete', 'visible' => false])
             ->and($response->actions['2'][0]->all())->toMatchArray(['id' => 'delete', 'visible' => true]);
     });
 
     it('narrows results from the request state', function () {
-        $response = turbineGrid(['search' => 'Pastel'])->toArray();
+        $response = turbineGrid(['search' => 'Pastel'])->envelope();
 
         expect($response->meta->search)->toBe('Pastel')
             ->and($response->meta->pagination->total)->toBe(2);
@@ -124,11 +124,11 @@ describe('Turbine builder', function () {
     });
 
     it('requires a datasource', function () {
-        Turbine::make()->toArray();
+        Turbine::make()->envelope();
     })->throws(\LogicException::class);
 
     it('emits footer perPage in the setup envelope by default', function () {
-        $response = turbineGrid()->toArray();
+        $response = turbineGrid()->envelope();
 
         expect($response->meta->setup['footer'])
             ->toMatchArray(['perPage' => 5, 'pageName' => 'page']);
@@ -157,7 +157,7 @@ describe('Turbine builder', function () {
                 (new Footer())->showPerPage(25, [10, 25, 50]),
                 (new Exportable('dishes'))->type(Exportable::TYPE_CSV),
             ])
-            ->toArray();
+            ->envelope();
 
         expect($response->meta->setup['footer'])
             ->toMatchArray(['perPage' => 25, 'perPageValues' => [10, 25, 50]])

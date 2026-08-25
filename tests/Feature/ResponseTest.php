@@ -37,38 +37,38 @@ function editButton(int $id): Button
 }
 
 it('builds a JSON envelope with data, meta, columns and filters', function () {
-    $response = Response::make(responseContext())->toArray();
+    $envelope = Response::make(responseContext())->envelope();
 
-    expect($response->data)->toBeArray()->not->toBeEmpty()
-        ->and($response->data[0])->toHaveKeys(['id', 'name'])
-        ->and($response->meta->pagination->perPage)->toBe(5)
-        ->and($response->meta->pagination->total)->toBe(Dish::query()->count())
-        ->and($response->meta->pagination->currentPage)->toBe(1)
-        ->and($response->meta->sort->field)->toBe('id')
-        ->and($response->columns)->toHaveCount(2)
-        ->and($response->columns[0]->all())->toMatchArray(['field' => 'id', 'sortable' => true, 'searchable' => false])
-        ->and($response->columns[1]->all())->toMatchArray(['field' => 'name', 'searchable' => true])
-        ->and($response->filters[0]->key)->toBe('input_text')
-        ->and($response->filters[0]->field)->toBe('name');
+    expect($envelope->data)->toBeArray()->not->toBeEmpty()
+        ->and($envelope->data[0])->toHaveKeys(['id', 'name'])
+        ->and($envelope->meta->pagination->perPage)->toBe(5)
+        ->and($envelope->meta->pagination->total)->toBe(Dish::query()->count())
+        ->and($envelope->meta->pagination->currentPage)->toBe(1)
+        ->and($envelope->meta->sort->field)->toBe('id')
+        ->and($envelope->columns)->toHaveCount(2)
+        ->and($envelope->columns[0]->all())->toMatchArray(['field' => 'id', 'sortable' => true, 'searchable' => false])
+        ->and($envelope->columns[1]->all())->toMatchArray(['field' => 'name', 'searchable' => true])
+        ->and($envelope->filters[0]->key)->toBe('input_text')
+        ->and($envelope->filters[0]->field)->toBe('name');
 });
 
 it('keys resolved action descriptors by primary key', function () {
-    $response = Response::make(responseContext())->toArray();
+    $envelope = Response::make(responseContext())->envelope();
 
-    $firstId = (int) $response->data[0]['id'];
+    $firstId = (int) $envelope->data[0]['id'];
 
-    expect($response->actions)->toHaveKey((string) $firstId)
-        ->and($response->actions[(string) $firstId][0]->all())->toMatchArray([
+    expect($envelope->actions)->toHaveKey((string) $firstId)
+        ->and($envelope->actions[(string) $firstId][0]->all())->toMatchArray([
             'id' => 'edit',
             'label' => 'Edit',
         ]);
 });
 
 it('echoes search state and narrows data in the envelope', function () {
-    $response = Response::make(responseContext(['search' => 'Pastel']))->toArray();
+    $envelope = Response::make(responseContext(['search' => 'Pastel']))->envelope();
 
-    expect($response->meta->search)->toBe('Pastel')
-        ->and($response->meta->pagination->total)->toBe(2);
+    expect($envelope->meta->search)->toBe('Pastel')
+        ->and($envelope->meta->pagination->total)->toBe(2);
 });
 
 it('produces a JSON response', function () {
@@ -93,11 +93,11 @@ it('omits filters and actions keys when they are empty', function () {
         actionsResolver: fn ($row) => [],
     );
 
-    $response = Response::make($context)->toArray();
+    $envelope = Response::make($context)->envelope();
 
-    expect($response->filters)->toBeNull()
-        ->and($response->actions)->toBeNull()
-        ->and($response->data)->toBeArray()
-        ->and($response->meta)->not->toBeNull()
-        ->and($response->columns)->toBeArray();
+    expect($envelope->filters)->toBeNull()
+        ->and($envelope->actions)->toBeNull()
+        ->and($envelope->data)->toBeArray()
+        ->and($envelope->meta)->not->toBeNull()
+        ->and($envelope->columns)->toBeArray();
 });

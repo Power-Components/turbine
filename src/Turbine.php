@@ -272,9 +272,17 @@ final class Turbine
         );
     }
 
-    public function toArray(): GridResponse
+    public function envelope(): GridResponse
     {
-        return Response::make($this->context())->toArray();
+        return Response::make($this->context())->envelope();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function toArray(): array
+    {
+        return $this->envelope()->all();
     }
 
     public function toResponse(): JsonResponse

@@ -91,9 +91,17 @@ abstract class GridDefinition implements GridSchema
             ->pageName($this->pageName);
     }
 
-    public function toArray(Request $request): GridResponse
+    public function envelope(Request $request): GridResponse
     {
-        return $this->toTurbine()->fromRequest($request)->toArray();
+        return $this->toTurbine()->fromRequest($request)->envelope();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function toArray(Request $request): array
+    {
+        return $this->envelope($request)->all();
     }
 
     public function toResponse(Request $request): JsonResponse

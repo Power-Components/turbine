@@ -70,7 +70,7 @@ describe('Custom DataSource Extension', function () {
             ->datasource(fn () => new CustomSearchSource($items))
             ->fields((new Fields())->add('id')->add('name'))
             ->columns([Column::make('Name', 'name')])
-            ->toArray();
+            ->envelope();
 
         expect($response->data)->toHaveCount(2)
             ->and($response->data[0]['name'])->toBe('Custom Item 1')
