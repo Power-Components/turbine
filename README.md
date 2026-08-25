@@ -35,14 +35,14 @@ composer require power-components/turbine
 ## How it fits together
 
 ```
-                 ?turbine[...] + ?page
+                  query params (state)
 Front-end  ───────────────────────────────▶  Turbine (PHP definition)
 (React / Vue /                                     │
  Livewire / AJAX)                                  ▼
-                                             Turbine engine
-                                   search · filter · sort · paginate
-                                                   │
-           JSON envelope { data, meta, columns, filters, actions }
+                                              Turbine engine
+                                    search · filter · sort · paginate
+                                                    │
+            JSON envelope { data, meta, columns, filters, actions }
 Front-end  ◀───────────────────────────────────────┘
 renders table
 ```
@@ -169,15 +169,7 @@ The class implements `PowerComponents\Turbine\Contracts\GridSchema`, the shared 
 
 ## The Request Contract
 
-Grid state is passed via the `turbine` query parameter and standard `page`:
-
-| Parameter | Purpose | Example |
-|---|---|---|
-| `turbine[search]` | Global search term | `turbine[search]=maria` |
-| `turbine[sortField]` | Column to sort by | `turbine[sortField]=name` |
-| `turbine[sortDirection]` | Direction (`asc` / `desc`) | `turbine[sortDirection]=desc` |
-| `turbine[filters][<key>][<field>]` | Filter value by type and field | `turbine[filters][input_text][name]=ana` |
-| `page` | Page number | `page=2` |
+Grid state (search, sort, filters) is read from the `turbine` query parameter on the incoming request. Pagination uses the standard Laravel `page` parameter.
 
 ## The Response Envelope
 
