@@ -25,6 +25,8 @@ class FilterBase implements Definition
 
     public mixed $defaultValue = null;
 
+    public ?int $order = null;
+
     public function __construct(
         public string $column,
         public ?string $field = null,
@@ -78,6 +80,14 @@ class FilterBase implements Definition
     public function default(mixed $value): self
     {
         $this->defaultValue = $value;
+
+        return $this;
+    }
+
+    /** Position in dropdown/flyout panels. Falls back to the filters() array index. */
+    public function order(int $order): self
+    {
+        $this->order = $order;
 
         return $this;
     }

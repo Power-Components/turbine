@@ -74,6 +74,9 @@ it('configures FilterBase methods properly', function () {
     $collectionClosure = fn ($collection, $val) => $collection;
     $filter->collection($collectionClosure);
     expect($filter->collection)->toBe($collectionClosure);
+
+    $filter->order(2);
+    expect($filter->order)->toBe(2);
 });
 
 it('configures FilterBoolean correctly', function () {

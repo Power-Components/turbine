@@ -84,6 +84,8 @@ class Column implements Definition
 
     public mixed $filters = null;
 
+    public ?string $align = 'left';
+
     /** @var array<string, mixed> */
     public array $customContent = [];
 
@@ -114,6 +116,18 @@ class Column implements Definition
             ->title($title)
             ->isAction()
             ->visibleInExport(false);
+    }
+
+    /**
+     * start, left, center, right, end
+     *
+     * @return $this
+     */
+    public function align(string $align): static
+    {
+        $this->align = $align;
+
+        return $this;
     }
 
     public function isAction(): static
