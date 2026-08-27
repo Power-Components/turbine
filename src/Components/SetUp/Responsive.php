@@ -46,4 +46,47 @@ final class Responsive implements Definition
 
         return $this;
     }
+
+    /**
+     * True when the column should stay visible. Matches `field`, `dataField`,
+     * the actions sentinel, and `fixedOnResponsive()`.
+     *
+     * @param  array<int, string>  $fixedColumns
+     */
+    public static function isColumnFixed(mixed $column, array $fixedColumns): bool
+    {
+        $field = data_get($column, 'field');
+        $dataField = data_get($column, 'dataField', $field);
+
+        if (is_string($field) && $field !== '' && in_array($field, $fixedColumns, true)) {
+            return true;
+        }
+
+        if (is_string($dataField) && $dataField !== '' && in_array($dataField, $fixedColumns, true)) {
+            return true;
+        }
+
+        if ((bool) data_get($column, 'isAction') && in_array(self::ACTIONS_COLUMN_NAME, $fixedColumns, true)) {
+            return true;
+        }
+
+        return (bool) data_get($column, 'fixedOnResponsive');
+    }
+
+    /**
+     * @param  array<string, int>  $sortOrder
+     */
+    public static function columnSortOrder(mixed $column, array $sortOrder): ?int
+    {
+        $field = data_get($column, 'field');
+        $dataField = data_get($column, 'dataField', $field);
+
+        foreach ([$field, $dataField] as $key) {
+            if (is_string($key) && $key !== '' && array_key_exists($key, $sortOrder)) {
+                return (int) $sortOrder[$key];
+            }
+        }
+
+        return null;
+    }
 }
