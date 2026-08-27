@@ -18,6 +18,42 @@ it('extracts export headers correctly from exportable columns', function () {
     expect($headers)->toBe(['Name', 'Email']);
 });
 
+it('does not export forceHidden columns unless visibleInExport is true', function () {
+    $engine = new ExportEngine();
+
+    $secret = Column::make('Secret', 'secret')->hidden();
+    $secret->hidden = false;
+
+    expect($engine->columnIsExportable($secret))->toBeFalse()
+        ->and($engine->columnIsExportable(Column::make('Secret', 'secret')->hidden()->visibleInExport(true)))->toBeTrue();
+});
+
+it('jails export file names to a basename under storage', function () {
+    $engine = new ExportEngine();
+
+    $context = new ArrayGridContext(
+        state: new State(),
+        datasourceResolver: fn () => [['id' => 1, 'name' => 'Alice']],
+        fields: (new Fields())->add('id')->add('name'),
+        columns: [
+            Column::make('ID', 'id'),
+            Column::make('Name', 'name'),
+        ]
+    );
+
+    $filePath = $engine->build(
+        context: $context,
+        exportType: 'csv',
+        fileName: '../../public/pwned',
+        exportOptions: ['csvSeparator' => ',', 'csvDelimiter' => '"']
+    );
+
+    expect($filePath)->toBe(storage_path('pwned.csv'))
+        ->and(file_exists($filePath))->toBeTrue();
+
+    @unlink($filePath);
+});
+
 it('neutralizes formula injection strings', function () {
     $engine = new ExportEngine();
 

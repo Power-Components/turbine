@@ -153,6 +153,15 @@ it('configures FilterMultiSelect properties', function () {
         ->and($filter->params)->toBe(['active' => true]);
 });
 
+it('accepts a Closure dataSource on FilterMultiSelect', function () {
+    $filter = new FilterMultiSelect('categories');
+    $loader = fn () => collect([['id' => 1, 'name' => 'Cat 1']]);
+    $filter->dataSource($loader)->depends(['parent_id']);
+
+    expect($filter->dataSource)->toBe($loader)
+        ->and($filter->depends)->toBe(['parent_id']);
+});
+
 it('configures FilterNumber properties', function () {
     $filter = new FilterNumber('price');
     $filter->thousands('.')

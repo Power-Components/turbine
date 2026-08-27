@@ -43,6 +43,13 @@ class ExportEngine
         $headers = $this->exportHeaders($columns);
         $rows = $this->streamRows($dataset, $columns, $stripTags);
 
+        $fileName = str_replace(['\\', "\0"], '/', $fileName);
+        $fileName = basename($fileName);
+
+        if ($fileName === '' || $fileName === '.' || $fileName === '..') {
+            $fileName = 'export';
+        }
+
         $ext = strtolower($exportType) === 'csv' ? 'csv' : 'xlsx';
         $fullPath = storage_path($fileName.'.'.$ext);
 
@@ -68,6 +75,10 @@ class ExportEngine
         }
 
         return array_map(function ($column) use ($currentHiddenStates) {
+            if ((bool) data_get($column, 'forceHidden')) {
+                return $column;
+            }
+
             $field = data_get($column, 'field');
             if (is_string($field) && isset($currentHiddenStates[$field])) {
                 data_set($column, 'hidden', $currentHiddenStates[$field]);
@@ -252,6 +263,10 @@ class ExportEngine
 
     public function columnIsExportable(mixed $column): bool
     {
+        if ((bool) data_get($column, 'forceHidden') && data_get($column, 'visibleInExport') !== true) {
+            return false;
+        }
+
         return (bool) data_get($column, 'visibleInExport')
             || (! data_get($column, 'hidden') && is_null(data_get($column, 'visibleInExport')));
     }
