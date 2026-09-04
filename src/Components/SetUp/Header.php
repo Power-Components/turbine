@@ -27,6 +27,38 @@ class Header implements Definition
     public array $elements = [];
 
     /**
+     * Alignment of the header controls group (toggle columns / export / filter
+     * / search) on its row: 'left' | 'center' | 'right'. Defaults to right.
+     */
+    public string $controlsAlign = 'right';
+
+    /** Align the header controls group: 'left' | 'center' | 'right'. */
+    public function align(string $align): Header
+    {
+        $this->controlsAlign = in_array($align, ['left', 'center', 'right'], true) ? $align : 'right';
+
+        return $this;
+    }
+
+    /** Align the header controls group to the left. */
+    public function left(): Header
+    {
+        return $this->align('left');
+    }
+
+    /** Center the header controls group. */
+    public function center(): Header
+    {
+        return $this->align('center');
+    }
+
+    /** Align the header controls group to the right (default). */
+    public function right(): Header
+    {
+        return $this->align('right');
+    }
+
+    /**
      * @return $this
      *               Show search input into component
      */

@@ -10,6 +10,18 @@ trait ResolvesGridSorting
 {
     public function resolveSortField(string $sortField): string
     {
+        foreach ($this->declaredColumns() as $column) {
+            if (data_get($column, 'field') === $sortField) {
+                $dataField = data_get($column, 'dataField');
+
+                if (is_string($dataField) && $dataField !== '' && $dataField !== $sortField) {
+                    return $dataField;
+                }
+
+                break;
+            }
+        }
+
         if (str_contains($sortField, '.') || $this->state()->ignoreTablePrefix) {
             return $sortField;
         }
@@ -25,8 +37,10 @@ trait ResolvesGridSorting
             }
         }
 
+        // Accept either the friendly `field` (sent by the header) or the
+        // `dataField` (backward compatible with direct sortField assignments).
         return collect($this->declaredColumns())
-            ->map(fn ($column) => data_get($column, 'dataField') ?: data_get($column, 'field'))
+            ->flatMap(fn ($column) => [data_get($column, 'field'), data_get($column, 'dataField')])
             ->filter()
             ->contains($sortField);
     }
@@ -40,9 +54,10 @@ trait ResolvesGridSorting
         $columns = $this->declaredColumns();
 
         foreach ($columns as $column) {
-            $columnDataField = data_get($column, 'dataField');
+            $matches = data_get($column, 'dataField') === $field
+                || data_get($column, 'field') === $field;
 
-            if ($columnDataField === $field && data_get($column, 'sortCallback') instanceof \Closure) {
+            if ($matches && data_get($column, 'sortCallback') instanceof \Closure) {
                 return $column instanceof Column ? $column->sortCallback : null;
             }
         }
