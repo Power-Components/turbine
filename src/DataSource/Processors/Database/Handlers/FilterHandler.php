@@ -7,7 +7,7 @@ use Illuminate\Database\Query\Builder as QueryBuilder;
 use PowerComponents\Turbine\Contracts\Context;
 use PowerComponents\Turbine\DataSource\Builders\{Boolean, DatePicker, DateTimePicker, InputText, MultiSelect, Number, Select};
 use PowerComponents\Turbine\DataSource\Support\InputOperators;
-use PowerComponents\Turbine\Support\FilterBag;
+use PowerComponents\Turbine\Support\{FilterBag, FilterValue};
 
 class FilterHandler
 {
@@ -49,12 +49,12 @@ class FilterHandler
 
             $query->where(function ($query) use ($filterType, $sqlField, $value, $filter, $filters, $bagKey) {
                 match ($filterType) {
-                    'datetime' => (new DateTimePicker($this->component, $filter))->builder($query, $sqlField, $value),
-                    'date' => (new DatePicker($this->component, $filter))->builder($query, $sqlField, $value),
-                    'multi_select' => (new MultiSelect($this->component, $filter))->builder($query, $sqlField, $value),
-                    'select' => (new Select($this->component, $filter))->builder($query, $sqlField, $value),
-                    'boolean' => (new Boolean($this->component, $filter))->builder($query, $sqlField, $value),
-                    'number' => (new Number($this->component, $filter))->builder($query, $sqlField, $value),
+                    'datetime' => (new DateTimePicker($this->component, $filter))->builder($query, $sqlField, FilterValue::dateRange($value)),
+                    'date' => (new DatePicker($this->component, $filter))->builder($query, $sqlField, FilterValue::dateRange($value)),
+                    'multi_select' => (new MultiSelect($this->component, $filter))->builder($query, $sqlField, FilterValue::items($value)),
+                    'select' => (new Select($this->component, $filter))->builder($query, $sqlField, FilterValue::map($value)),
+                    'boolean' => (new Boolean($this->component, $filter))->builder($query, $sqlField, FilterValue::map($value)),
+                    'number' => (new Number($this->component, $filter))->builder($query, $sqlField, FilterValue::numberRange($value)),
                     'input_text' => (new InputText($this->component, $filter))->builder($query, $sqlField, [
                         'selected' => $this->validateInputTextOptions($filters, $bagKey, $this->resolveConfiguredOperators($filter)),
                         'value' => $value,

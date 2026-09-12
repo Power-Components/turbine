@@ -8,7 +8,7 @@ use PowerComponents\Turbine\Contracts\Context;
 use PowerComponents\Turbine\DataSource\Builders\{Boolean, DatePicker, DateTimePicker, InputText, MultiSelect, Number, Select};
 use PowerComponents\Turbine\DataSource\Support\InputOperators;
 use PowerComponents\Turbine\Plugins\FilterBuilder\FilterBuilderHandler;
-use PowerComponents\Turbine\Support\FilterBag;
+use PowerComponents\Turbine\Support\{FilterBag, FilterValue};
 
 final class Filters
 {
@@ -53,12 +53,12 @@ final class Filters
             $value = $record['value'] ?? null;
 
             $results = match ($filterType) {
-                'datetime' => (new DateTimePicker($this->component, $definition))->collection($results, $sqlField, $value),
-                'date' => (new DatePicker($this->component, $definition))->collection($results, $sqlField, $value),
-                'multi_select' => (new MultiSelect($this->component, $definition))->collection($results, $sqlField, $value),
-                'select' => (new Select($this->component, $definition))->collection($results, $sqlField, $value),
-                'boolean' => (new Boolean($this->component, $definition))->collection($results, $sqlField, $value),
-                'number' => (new Number($this->component, $definition))->collection($results, $sqlField, $value),
+                'datetime' => (new DateTimePicker($this->component, $definition))->collection($results, $sqlField, FilterValue::dateRange($value)),
+                'date' => (new DatePicker($this->component, $definition))->collection($results, $sqlField, FilterValue::dateRange($value)),
+                'multi_select' => (new MultiSelect($this->component, $definition))->collection($results, $sqlField, FilterValue::items($value)),
+                'select' => (new Select($this->component, $definition))->collection($results, $sqlField, FilterValue::map($value)),
+                'boolean' => (new Boolean($this->component, $definition))->collection($results, $sqlField, FilterValue::map($value)),
+                'number' => (new Number($this->component, $definition))->collection($results, $sqlField, FilterValue::numberRange($value)),
                 'input_text' => (new InputText($this->component, $definition))->collection($results, $sqlField, [
                     'selected' => $this->validateInputTextOptions($filters, $bagKey),
                     'value' => $value,

@@ -107,8 +107,9 @@ class FilterManager
                     break;
 
                 case 'number':
+                    $current = $filters[$bagKey] ?? null;
                     /** @var array<string, mixed> $range */
-                    $range = is_array($filters[$bagKey]['value'] ?? null) ? $filters[$bagKey]['value'] : [];
+                    $range = is_array($current) && is_array($current['value'] ?? null) ? $current['value'] : [];
                     if (is_array($defaultValue)) {
                         if (isset($defaultValue['start'])) {
                             $range['start'] = $defaultValue['start'];

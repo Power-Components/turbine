@@ -10,16 +10,12 @@ use Illuminate\Support\{Carbon, Collection};
 class DatePicker extends BuilderBase
 {
     /**
-     * @param  int|array{start: string, end: string}|string|null  $values
+     * @param  int|array{start?: string, end?: string}|string|null  $values
      * @param  EloquentBuilder<Model>|QueryBuilder  $builder
      */
     public function builder(EloquentBuilder|QueryBuilder $builder, string $field, int|array|string|null $values): void
     {
-        if (gettype($values) !== 'array') {
-            return;
-        }
-
-        if (! isset($values['start']) && ! isset($values['end'])) {
+        if (gettype($values) !== 'array' || ! isset($values['start'], $values['end'])) {
             return;
         }
 
@@ -42,13 +38,13 @@ class DatePicker extends BuilderBase
     }
 
     /**
-     * @param  int|array{start: string, end: string}|string|null  $values
+     * @param  int|array{start?: string, end?: string}|string|null  $values
      * @param  Collection<int, mixed>  $collection
      * @return Collection<int, mixed>
      */
     public function collection(Collection $collection, string $field, int|array|string|null $values): Collection
     {
-        if (! isset($values['start']) && ! isset($values['end'])) {
+        if (! is_array($values) || ! isset($values['start'], $values['end'])) {
             return $collection;
         }
 

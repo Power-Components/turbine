@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\{Builder, Builder as EloquentBuilder, Model};
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\{Collection, Str};
 use PowerComponents\Turbine\DataSource\Support\Sql;
+use PowerComponents\Turbine\Support\FilterValue;
 
 class InputText extends BuilderBase
 {
@@ -42,7 +43,7 @@ class InputText extends BuilderBase
         /** @var array{value: mixed, selected: string, searchMorphs: mixed} $values */
         $rawValue = $values['value'];
         /** @var string|array<int|string, mixed> $value */
-        $value = is_array($rawValue) ? $rawValue : strval($rawValue ?? '');
+        $value = is_array($rawValue) ? $rawValue : FilterValue::text($rawValue);
         /** @var string $selected */
         $selected = $values['selected'];
         $searchMorphs = $values['searchMorphs'];
