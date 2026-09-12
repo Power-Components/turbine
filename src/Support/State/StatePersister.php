@@ -61,7 +61,6 @@ class StatePersister
 
         if ($persistFilters) {
             $state['filters'] = $filters;
-            $state['enabledFilters'] = $enabledFilters;
         }
 
         if (($persistFilters || $persistFilterBuilder) && ! empty($filterBuilder['rows'] ?? [])) {

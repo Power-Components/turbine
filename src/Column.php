@@ -11,17 +11,11 @@ use PowerComponents\Turbine\Contracts\Definition;
  *
  * Macros
  *
+ * @method static summarize(string $operation, string $label, bool $header = false, bool $footer = true)
  * @method static withSummary(string $key, string $label, \Closure $using, bool $header = false, bool $footer = true)
  * @method static naturalSort()
  * @method static searchableRaw(string $sql)
  * @method static searchableJson(string $tableName) // sqlite, mysql
- *
- * Deprecated summary helpers — prefer withSummary() with a closure.
- * @method static withSum(string $label, bool $header = false, bool $footer = true) @deprecated since 7.x, use withSummary() instead
- * @method static withCount(string $label, bool $header = false, bool $footer = true) @deprecated since 7.x, use withSummary() instead
- * @method static withAvg(string $label, bool $header = false, bool $footer = true) @deprecated since 7.x, use withSummary() instead
- * @method static withMin(string $label, bool $header = false, bool $footer = true) @deprecated since 7.x, use withSummary() instead
- * @method static withMax(string $label, bool $header = false, bool $footer = true) @deprecated since 7.x, use withSummary() instead
  */
 class Column implements Definition
 {

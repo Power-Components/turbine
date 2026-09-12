@@ -6,7 +6,7 @@ use Closure;
 use Illuminate\Database\Eloquent\Model;
 use Laravel\Scout\Builder as ScoutBuilder;
 use PowerComponents\Turbine\Contracts\Context;
-use PowerComponents\Turbine\DataSource\Support\FilterNormalizer;
+use PowerComponents\Turbine\Support\FilterBag;
 
 final class Filters
 {
@@ -23,18 +23,21 @@ final class Filters
             return $next($builder);
         }
 
-        foreach ($filters as $columns) {
-            foreach (FilterNormalizer::normalize((array) $columns) as $field => $value) {
-                $hasDefinition = $filterDefinitions->contains(
-                    fn ($filter) => data_get($filter, 'field') === $field
-                );
-
-                if (! $hasDefinition) {
-                    continue;
-                }
-
-                $builder->where($field, $value);
+        foreach ($filters as $bagKey => $record) {
+            if (! FilterBag::isRecord($record) || ! FilterBag::isActive($record)) {
+                continue;
             }
+
+            $bagKey = (string) $bagKey;
+            $filter = $filterDefinitions->first(
+                fn ($definition) => FilterBag::matchesDefinition($definition, $bagKey)
+            );
+
+            if ($filter === null) {
+                continue;
+            }
+
+            $builder->where(FilterBag::sqlField($filter, $bagKey), $record['value'] ?? null);
         }
 
         return $next($builder);

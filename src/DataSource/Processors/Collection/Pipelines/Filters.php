@@ -6,8 +6,9 @@ use Closure;
 use Illuminate\Support\Collection;
 use PowerComponents\Turbine\Contracts\Context;
 use PowerComponents\Turbine\DataSource\Builders\{Boolean, DatePicker, DateTimePicker, InputText, MultiSelect, Number, Select};
-use PowerComponents\Turbine\DataSource\Support\{FilterNormalizer, InputOperators};
+use PowerComponents\Turbine\DataSource\Support\InputOperators;
 use PowerComponents\Turbine\Plugins\FilterBuilder\FilterBuilderHandler;
+use PowerComponents\Turbine\Support\{FilterBag, FilterValue};
 
 final class Filters
 {
@@ -33,46 +34,37 @@ final class Filters
         $definitions = collect($this->component->declaredFilters());
         $results = $collection;
 
-        foreach ($filters as $filterType => $columns) {
-            foreach (FilterNormalizer::normalize((array) $columns) as $field => $value) {
-                $definition = $definitions->first(fn ($filter) => data_get($filter, 'field') === $field);
-
-                if (! $definition) {
-                    continue;
-                }
-
-                $results = match ($filterType) {
-                    'datetime' => (function () use ($results, $field, $value, $definition) {
-                        /** @var array{start: string, end: string}|int|string|null $value */
-                        return (new DateTimePicker($this->component, $definition))->collection($results, $field, $value);
-                    })(),
-                    'date' => (function () use ($results, $field, $value, $definition) {
-                        /** @var array{start: string, end: string}|int|string|null $value */
-                        return (new DatePicker($this->component, $definition))->collection($results, $field, $value);
-                    })(),
-                    'multi_select' => (function () use ($results, $field, $value, $definition) {
-                        /** @var int|list<string>|string|null $value */
-                        return (new MultiSelect($this->component, $definition))->collection($results, $field, $value);
-                    })(),
-                    'select' => (function () use ($results, $field, $value, $definition) {
-                        /** @var array<string, mixed>|int|string|null $value */
-                        return (new Select($this->component, $definition))->collection($results, $field, $value);
-                    })(),
-                    'boolean' => (function () use ($results, $field, $value, $definition) {
-                        /** @var array<string, mixed>|int|string|null $value */
-                        return (new Boolean($this->component, $definition))->collection($results, $field, $value);
-                    })(),
-                    'number' => (function () use ($results, $field, $value, $definition) {
-                        /** @var array{start?: float|int|string, end?: float|int|string}|int|string|null $value */
-                        return (new Number($this->component, $definition))->collection($results, $field, $value);
-                    })(),
-                    'input_text' => (new InputText($this->component, $definition))->collection($results, $field, [
-                        'selected' => $this->validateInputTextOptions($this->component->state()->filters, $field),
-                        'value' => $value,
-                    ]),
-                    default => $results
-                };
+        foreach ($filters as $bagKey => $record) {
+            if (! FilterBag::isRecord($record) || ! FilterBag::isActive($record)) {
+                continue;
             }
+
+            $bagKey = (string) $bagKey;
+            $definition = $definitions->first(
+                fn ($filter) => FilterBag::matchesDefinition($filter, $bagKey)
+            );
+
+            if (! $definition) {
+                continue;
+            }
+
+            $sqlField = FilterBag::sqlField($definition, $bagKey);
+            $filterType = $record['type'];
+            $value = $record['value'] ?? null;
+
+            $results = match ($filterType) {
+                'datetime' => (new DateTimePicker($this->component, $definition))->collection($results, $sqlField, FilterValue::dateRange($value)),
+                'date' => (new DatePicker($this->component, $definition))->collection($results, $sqlField, FilterValue::dateRange($value)),
+                'multi_select' => (new MultiSelect($this->component, $definition))->collection($results, $sqlField, FilterValue::items($value)),
+                'select' => (new Select($this->component, $definition))->collection($results, $sqlField, FilterValue::map($value)),
+                'boolean' => (new Boolean($this->component, $definition))->collection($results, $sqlField, FilterValue::map($value)),
+                'number' => (new Number($this->component, $definition))->collection($results, $sqlField, FilterValue::numberRange($value)),
+                'input_text' => (new InputText($this->component, $definition))->collection($results, $sqlField, [
+                    'selected' => $this->validateInputTextOptions($filters, $bagKey),
+                    'value' => $value,
+                ]),
+                default => $results
+            };
         }
 
         if ($filterBuilder->isActive()) {

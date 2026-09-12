@@ -12,7 +12,7 @@ use PowerComponents\Turbine\DataSource\ProcessDataSource;
 function pgFilter(string $type, string $field, mixed $value, array $filters): int
 {
     $context = turbineContext(
-        statePayload: ['filters' => [$type => [$field => $value]]],
+        statePayload: ['filters' => [$field => ['type' => $type, 'value' => $value]]],
         filters: $filters,
     );
 

@@ -6,7 +6,8 @@ use Illuminate\Database\Eloquent\{Builder as EloquentBuilder, Model};
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use PowerComponents\Turbine\Contracts\Context;
 use PowerComponents\Turbine\DataSource\Builders\{Boolean, DatePicker, DateTimePicker, InputText, MultiSelect, Number, Select};
-use PowerComponents\Turbine\DataSource\Support\{FilterNormalizer, InputOperators};
+use PowerComponents\Turbine\DataSource\Support\InputOperators;
+use PowerComponents\Turbine\Support\{FilterBag, FilterValue};
 
 class FilterHandler
 {
@@ -27,46 +28,41 @@ class FilterHandler
             return $query;
         }
 
-        foreach ($filters as $filterType => $columns) {
-            foreach (FilterNormalizer::normalize((array) $columns) as $field => $value) {
-                // Only apply a filter for a field that was actually declared in
-                // filters(). Without this guard the field/column identifier is
-                // user-controlled (the $filters property is mass-assignable), so
-                // a crafted request could filter on an undeclared column.
-                $hasDefinition = $filterDefinitions->contains(
-                    fn ($filter) => data_get($filter, 'field') === $field
-                );
-
-                if (! $hasDefinition) {
-                    continue;
-                }
-
-                $query->where(function ($query) use ($filterType, $field, $value, $filterDefinitions) {
-                    $filter = function ($query, $filterDefinitions, $filterType, $field, $value) {
-                        $filter = $filterDefinitions->filter(function ($filter) use ($field) {
-                            return data_get($filter, 'field') === $field;
-                        })
-                            ->first();
-
-                        match ($filterType) {
-                            'datetime' => (new DateTimePicker($this->component, $filter))->builder($query, $field, $value),
-                            'date' => (new DatePicker($this->component, $filter))->builder($query, $field, $value),
-                            'multi_select' => (new MultiSelect($this->component, $filter))->builder($query, $field, $value),
-                            'select' => (new Select($this->component, $filter))->builder($query, $field, $value),
-                            'boolean' => (new Boolean($this->component, $filter))->builder($query, $field, $value),
-                            'number' => (new Number($this->component, $filter))->builder($query, $field, $value),
-                            'input_text' => (new InputText($this->component, $filter))->builder($query, $field, [
-                                'selected' => $this->validateInputTextOptions($this->component->state()->filters, $field, $this->resolveConfiguredOperators($filter)),
-                                'value' => $value,
-                                'searchMorphs' => $this->component->searchMorphs(),
-                            ]),
-                            default => null
-                        };
-                    };
-
-                    $filter($query, $filterDefinitions, $filterType, $field, $value);
-                });
+        foreach ($filters as $bagKey => $record) {
+            if (! FilterBag::isRecord($record) || ! FilterBag::isActive($record)) {
+                continue;
             }
+
+            $bagKey = (string) $bagKey;
+
+            $filter = $filterDefinitions->first(
+                fn ($definition) => FilterBag::matchesDefinition($definition, $bagKey)
+            );
+
+            if ($filter === null) {
+                continue;
+            }
+
+            $sqlField = FilterBag::sqlField($filter, $bagKey);
+            $filterType = $record['type'];
+            $value = $record['value'] ?? null;
+
+            $query->where(function ($query) use ($filterType, $sqlField, $value, $filter, $filters, $bagKey) {
+                match ($filterType) {
+                    'datetime' => (new DateTimePicker($this->component, $filter))->builder($query, $sqlField, FilterValue::dateRange($value)),
+                    'date' => (new DatePicker($this->component, $filter))->builder($query, $sqlField, FilterValue::dateRange($value)),
+                    'multi_select' => (new MultiSelect($this->component, $filter))->builder($query, $sqlField, FilterValue::items($value)),
+                    'select' => (new Select($this->component, $filter))->builder($query, $sqlField, FilterValue::map($value)),
+                    'boolean' => (new Boolean($this->component, $filter))->builder($query, $sqlField, FilterValue::map($value)),
+                    'number' => (new Number($this->component, $filter))->builder($query, $sqlField, FilterValue::numberRange($value)),
+                    'input_text' => (new InputText($this->component, $filter))->builder($query, $sqlField, [
+                        'selected' => $this->validateInputTextOptions($filters, $bagKey, $this->resolveConfiguredOperators($filter)),
+                        'value' => $value,
+                        'searchMorphs' => $this->component->searchMorphs(),
+                    ]),
+                    default => null
+                };
+            });
         }
 
         return $query;

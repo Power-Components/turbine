@@ -2,6 +2,8 @@
 
 namespace PowerComponents\Turbine\Components\Filters;
 
+use PowerComponents\Turbine\Support\FilterBag;
+
 class FilterManager
 {
     public function multiSelect(string $column, ?string $field = null): FilterMultiSelect
@@ -56,26 +58,13 @@ class FilterManager
 
     /**
      * @param  list<FilterBase>  $declaredFilters
-     * @param  array<int, mixed>  $columns
      * @param  array<string, mixed>  $filters
-     * @param  list<array<string, mixed>>  $enabledFilters
      */
     public function applyDefaults(
         array $declaredFilters,
-        array $columns,
-        array &$filters,
-        array &$enabledFilters
+        array &$filters
     ): bool {
         $applied = false;
-        $columnsByField = collect($columns)->mapWithKeys(function ($column) {
-            $field = data_get($column, 'field');
-            $dataField = data_get($column, 'dataField');
-            $fieldStr = is_string($field) || is_numeric($field) ? (string) $field : '';
-            $dataFieldStr = is_string($dataField) || is_numeric($dataField) ? (string) $dataField : '';
-            $key = filled($fieldStr) ? $fieldStr : $dataFieldStr;
-
-            return [$key => $column];
-        });
 
         foreach ($declaredFilters as $filter) {
             if (blank($filter->defaultValue) || blank($filter->field)) {
@@ -83,66 +72,55 @@ class FilterManager
             }
 
             $field = (string) $filter->field;
-            $columnData = $columnsByField->get($filter->column);
-            $labelRaw = data_get($columnData, 'title', $field);
-            $label = is_string($labelRaw) ? $labelRaw : $field;
-            $key = data_get($filter, 'key');
+            $bagKey = FilterBag::bagKey($filter->column, $field);
+            $key = is_string(data_get($filter, 'key')) ? (string) data_get($filter, 'key') : '';
             $defaultValue = $filter->defaultValue;
 
             switch ($key) {
                 case 'select':
-                    $filters['select'] = (array) ($filters['select'] ?? []);
-                    $filters['select'][$field] = $defaultValue;
-                    $this->addEnabledFilter($field, $label, $enabledFilters);
+                    $filters[$bagKey] = FilterBag::record('select', $defaultValue);
                     $applied = true;
                     break;
 
                 case 'multi_select':
                     $values = is_array($defaultValue) ? $defaultValue : [$defaultValue];
-                    $filters['multi_select'] = (array) ($filters['multi_select'] ?? []);
-                    $filters['multi_select'][$field] = $values;
-                    $this->addEnabledFilter($field, $label, $enabledFilters);
+                    $filters[$bagKey] = FilterBag::record('multi_select', $values);
                     $applied = true;
                     break;
 
                 case 'boolean':
-                    $filters['boolean'] = (array) ($filters['boolean'] ?? []);
-                    $filters['boolean'][$field] = $defaultValue;
-                    $this->addEnabledFilter($field, $label, $enabledFilters);
+                    $filters[$bagKey] = FilterBag::record('boolean', $defaultValue);
                     $applied = true;
                     break;
 
                 case 'input_text':
-                    $filters['input_text'] = (array) ($filters['input_text'] ?? []);
                     if (is_array($defaultValue)) {
-                        $filters['input_text'][$field] = $defaultValue['value'] ?? '';
-                        if (isset($defaultValue['operator'])) {
-                            $filters['input_text_options'] = (array) ($filters['input_text_options'] ?? []);
-                            $filters['input_text_options'][$field] = $defaultValue['operator'];
-                        }
+                        $filters[$bagKey] = FilterBag::record(
+                            'input_text',
+                            $defaultValue['value'] ?? '',
+                            $defaultValue['operator'] ?? null,
+                        );
                     } else {
-                        $filters['input_text'][$field] = $defaultValue;
+                        $filters[$bagKey] = FilterBag::record('input_text', $defaultValue);
                     }
-                    $this->addEnabledFilter($field, $label, $enabledFilters);
                     $applied = true;
                     break;
 
                 case 'number':
-                    $filters['number'] = (array) ($filters['number'] ?? []);
-                    /** @var array<string, mixed> $numberFieldFilter */
-                    $numberFieldFilter = (array) ($filters['number'][$field] ?? []);
+                    $current = $filters[$bagKey] ?? null;
+                    /** @var array<string, mixed> $range */
+                    $range = is_array($current) && is_array($current['value'] ?? null) ? $current['value'] : [];
                     if (is_array($defaultValue)) {
                         if (isset($defaultValue['start'])) {
-                            $numberFieldFilter['start'] = $defaultValue['start'];
+                            $range['start'] = $defaultValue['start'];
                         }
                         if (isset($defaultValue['end'])) {
-                            $numberFieldFilter['end'] = $defaultValue['end'];
+                            $range['end'] = $defaultValue['end'];
                         }
                     } else {
-                        $numberFieldFilter['start'] = $defaultValue;
+                        $range['start'] = $defaultValue;
                     }
-                    $filters['number'][$field] = $numberFieldFilter;
-                    $this->addEnabledFilter($field, $label, $enabledFilters);
+                    $filters[$bagKey] = FilterBag::record('number', $range);
                     $applied = true;
                     break;
 
@@ -150,49 +128,21 @@ class FilterManager
                 case 'datetime':
                 case 'datepicker':
                 case 'datetimepicker':
-                    $filterKey = in_array($key, ['date', 'datepicker'], true) ? 'date' : 'datetime';
-                    $filters[$filterKey] = (array) ($filters[$filterKey] ?? []);
+                    $type = FilterBag::normalizeType($key);
                     if (is_array($defaultValue)) {
-                        $filters[$filterKey][$field] = [
+                        $filters[$bagKey] = FilterBag::record($type, [
                             'start' => $defaultValue['start'] ?? '',
                             'end' => $defaultValue['end'] ?? '',
                             'formatted' => $defaultValue['formatted'] ?? '',
-                        ];
+                        ]);
                     } else {
-                        $filters[$filterKey][$field] = $defaultValue;
+                        $filters[$bagKey] = FilterBag::record($type, $defaultValue);
                     }
-                    $this->addEnabledFilter($field, $label, $enabledFilters);
                     $applied = true;
                     break;
             }
         }
 
         return $applied;
-    }
-
-    /**
-     * @param  list<array<string, mixed>>  $enabledFilters
-     */
-    public function addEnabledFilter(string $field, string $label, array &$enabledFilters): void
-    {
-        $exists = collect($enabledFilters)->contains(fn ($item) => data_get($item, 'field') === $field);
-
-        if (! $exists) {
-            $enabledFilters[] = [
-                'field' => $field,
-                'label' => $label,
-            ];
-        }
-    }
-
-    /**
-     * @param  list<array<string, mixed>>  $enabledFilters
-     */
-    public function removeEnabledFilter(string $field, array &$enabledFilters): void
-    {
-        $enabledFilters = array_values(array_filter(
-            $enabledFilters,
-            fn ($item) => data_get($item, 'field') !== $field
-        ));
     }
 }
