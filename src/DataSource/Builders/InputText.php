@@ -40,8 +40,9 @@ class InputText extends BuilderBase
         }
 
         /** @var array{value: mixed, selected: string, searchMorphs: mixed} $values */
+        $rawValue = $values['value'];
         /** @var string|array<int|string, mixed> $value */
-        $value = $values['value'];
+        $value = is_array($rawValue) ? $rawValue : strval($rawValue ?? '');
         /** @var string $selected */
         $selected = $values['selected'];
         $searchMorphs = $values['searchMorphs'];
@@ -114,8 +115,7 @@ class InputText extends BuilderBase
         }
 
         /** @var array{value: mixed, selected: string} $values */
-        /** @var string $value */
-        $value = $values['value'];
+        $value = is_scalar($values['value'] ?? null) ? strval($values['value']) : '';
         $selected = $values['selected'];
 
         return match ($selected) {

@@ -25,7 +25,8 @@ it('serializes state and generates correct key name', function () {
 
     $decoded = json_decode($json, true);
 
-    expect($decoded)->toHaveKeys(['columns', 'filters', 'enabledFilters', 'sortField', 'sortDirection'])
+    expect($decoded)->toHaveKeys(['columns', 'filters', 'sortField', 'sortDirection'])
+        ->and($decoded)->not->toHaveKey('enabledFilters')
         ->and($decoded['sortField'])->toBe('name')
         ->and($decoded['filters']['select']['status'])->toBe('active');
 });
@@ -37,18 +38,12 @@ it('applies default filters using FilterManager', function () {
         ->default('active');
 
     $filters = [];
-    $enabledFilters = [];
-    $columns = [Column::make('Status', 'status')];
 
     $applied = $manager->applyDefaults(
         declaredFilters: [$filter],
-        columns: $columns,
         filters: $filters,
-        enabledFilters: $enabledFilters
     );
 
     expect($applied)->toBeTrue()
-        ->and($filters['select']['status'])->toBe('active')
-        ->and($enabledFilters)->toHaveCount(1)
-        ->and($enabledFilters[0]['field'])->toBe('status');
+        ->and($filters['status'])->toMatchArray(['type' => 'select', 'value' => 'active']);
 });
