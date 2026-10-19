@@ -39,17 +39,19 @@ final class FilterValue
         $range = [];
 
         foreach (['start', 'end'] as $bound) {
-            $bound_ = $value[$bound] ?? null;
+            $edge = $value[$bound] ?? null;
 
-            if (is_float($bound_) || is_int($bound_) || is_string($bound_)) {
-                $range[$bound] = $bound_;
+            if (is_float($edge) || is_int($edge) || is_string($edge)) {
+                $range[$bound] = $edge;
             }
         }
 
         return $range;
     }
 
-    /** @return int|list<string>|string|null */
+    /**
+     * @return int|list<scalar>|string|null
+     */
     public static function items(mixed $value): int|array|string|null
     {
         if (! is_array($value)) {
@@ -60,7 +62,7 @@ final class FilterValue
 
         foreach ($value as $item) {
             if (is_scalar($item)) {
-                $items[] = (string) $item;
+                $items[] = $item;
             }
         }
 

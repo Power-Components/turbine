@@ -46,7 +46,7 @@ class SummaryCalculator
             ? $this->fromCollection($source)
             : $this->fromQuery($source);
 
-        if (! filled(data_get($this->component->state()->setUp, 'cache.enabled'))) {
+        if (! data_get($this->component->state()->setUp, 'cache.enabled')) {
             return $resolver();
         }
 

@@ -10,7 +10,7 @@ use Illuminate\Support\Collection;
 trait WithMultiSelectBuilder
 {
     /**
-     * @param  list<string>|int|string|null  $values
+     * @param  list<scalar>|int|string|null  $values
      * @param  Builder<Model>|QueryBuilder  $builder
      */
     public function builder(Builder|QueryBuilder $builder, string $field, array|int|string|null $values): void
@@ -38,7 +38,7 @@ trait WithMultiSelectBuilder
     }
 
     /**
-     * @param  list<string>|int|string|null  $values
+     * @param  list<scalar>|int|string|null  $values
      * @param  Collection<int, mixed>  $collection
      * @return Collection<int, mixed>
      */
