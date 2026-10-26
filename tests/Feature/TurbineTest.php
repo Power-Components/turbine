@@ -106,6 +106,21 @@ describe('Turbine builder', function () {
             ->and($response->meta->pagination->total)->toBe(2);
     });
 
+    it('keeps the row key server-side when the request names another one', function () {
+        $response = turbineGrid(['primaryKeyAlias' => 'in_stock'])->envelope();
+
+        expect($response->data[0])->not->toHaveKey('in_stock');
+    });
+
+    it('resolves columns from the grid definition, not the request', function () {
+        $response = turbineGrid(['columns' => [['field' => 'other']], 'multiSort' => true])
+            ->columns(fn () => [Column::make('Id', 'id'), Column::make('Name', 'name')])
+            ->envelope();
+
+        expect($response->data[0])->toHaveKeys(['id', 'name', 'price'])
+            ->and($response->data[0])->not->toHaveKey('in_stock');
+    });
+
     it('produces a JSON response', function () {
         $response = turbineGrid()->toResponse();
 

@@ -91,3 +91,17 @@ it('handles OR boolean grouping in applyCollection', function () {
 
     expect($filtered)->toHaveCount(2);
 });
+
+it('reads a text condition value as a single value', function () {
+    $ctx = makeFilterBuilderContext([
+        'match' => 'and',
+        'rows' => [
+            ['column' => 'name', 'operator' => 'is', 'value' => ['price' => 10], 'boolean' => 'and'],
+        ],
+    ]);
+
+    $query = Dish::query();
+    (new FilterBuilderHandler($ctx))->apply($query);
+
+    expect($query->toSql())->not->toContain('"name"."price"');
+});

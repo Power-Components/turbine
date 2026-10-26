@@ -89,6 +89,36 @@ final class FilterBag
         return filled($value);
     }
 
+    /**
+     * @param  array{type: string, value?: mixed, op?: mixed}  $record
+     * @return array{type: string, value?: mixed, op?: mixed}
+     */
+    public static function forDefinition(mixed $definition, array $record): array
+    {
+        $type = data_get($definition, 'key');
+
+        if (is_string($type) && $type !== '') {
+            $record['type'] = self::normalizeType($type);
+        }
+
+        $value = $record['value'] ?? null;
+
+        if (is_array($value) && ! self::acceptsArray($record['type'], array_is_list($value))) {
+            $record['value'] = null;
+        }
+
+        return $record;
+    }
+
+    private static function acceptsArray(string $type, bool $list): bool
+    {
+        return match ($type) {
+            'number', 'date', 'datetime', 'multi_select' => true,
+            'select', 'boolean' => $list,
+            default => false,
+        };
+    }
+
     public static function isValuelessOperator(mixed $operator): bool
     {
         return in_array($operator, self::VALUELESS_OPERATORS, true);

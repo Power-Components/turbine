@@ -35,7 +35,7 @@ final class Filters
         $results = $collection;
 
         foreach ($filters as $bagKey => $record) {
-            if (! FilterBag::isRecord($record) || ! FilterBag::isActive($record)) {
+            if (! FilterBag::isRecord($record)) {
                 continue;
             }
 
@@ -45,6 +45,12 @@ final class Filters
             );
 
             if (! $definition) {
+                continue;
+            }
+
+            $record = FilterBag::forDefinition($definition, $record);
+
+            if (! FilterBag::isActive($record)) {
                 continue;
             }
 

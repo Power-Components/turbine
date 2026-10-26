@@ -29,7 +29,7 @@ class FilterHandler
         }
 
         foreach ($filters as $bagKey => $record) {
-            if (! FilterBag::isRecord($record) || ! FilterBag::isActive($record)) {
+            if (! FilterBag::isRecord($record)) {
                 continue;
             }
 
@@ -40,6 +40,12 @@ class FilterHandler
             );
 
             if ($filter === null) {
+                continue;
+            }
+
+            $record = FilterBag::forDefinition($filter, $record);
+
+            if (! FilterBag::isActive($record)) {
                 continue;
             }
 

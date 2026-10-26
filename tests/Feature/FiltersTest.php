@@ -2,7 +2,7 @@
 
 namespace PowerComponents\Turbine\Tests\Feature;
 
-use PowerComponents\Turbine\Components\Filters\{FilterBoolean, FilterMultiSelect, FilterNumber, FilterSelect};
+use PowerComponents\Turbine\Components\Filters\{FilterBoolean, FilterInputText, FilterMultiSelect, FilterNumber, FilterSelect};
 use PowerComponents\Turbine\DataSource\ProcessDataSource;
 
 /**
@@ -44,4 +44,15 @@ it('ignores a filter type whose field is not declared', function () {
     $total = pgFilter('select', 'name', 'Sushi', [new FilterSelect('price')]);
 
     expect($total)->toBe(5);
+});
+
+it('reads a filter record with the type its definition declares', function () {
+    expect(pgFilter('number', 'name', 'Sushi', [new FilterSelect('name')]))->toBe(1)
+        ->and(pgFilter('select', 'price', ['start' => 30], [new FilterNumber('price')]))->toBe(2);
+});
+
+it('ignores a keyed filter value the declared type does not take', function () {
+    expect(pgFilter('select', 'name', ['price' => 10], [new FilterInputText('name')]))->toBe(5)
+        ->and(pgFilter('select', 'name', ['price' => 10], [new FilterSelect('name')]))->toBe(5)
+        ->and(pgFilter('boolean', 'in_stock', ['price' => 10], [new FilterBoolean('in_stock')]))->toBe(5);
 });
