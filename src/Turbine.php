@@ -302,6 +302,8 @@ final class Turbine
     {
         return State::fromArray(array_merge($this->requestState, [
            'primaryKey' => $this->primaryKey,
+           'primaryKeyAlias' => null,
+           'columns' => [],
            'tableName' => $this->tableName,
            'setUp' => $this->buildSetUp(),
         ]));

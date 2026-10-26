@@ -185,7 +185,7 @@ final readonly class FilterBuilderHandler
         return match ($type) {
             'input_text' => [
                 'selected' => $row['operator'],
-                'value' => $row['value'],
+                'value' => $this->scalarValue($row['value']),
                 'searchMorphs' => $this->component->searchMorphs(),
             ],
             'number' => match ($row['operator']) {
