@@ -32,7 +32,6 @@ class ModelProcessor extends DataSourceBase
                 new Pipelines\SoftDeletes($this->component),
                 new Pipelines\ColumnRawQueries($this->component),
                 new Pipelines\SelectColumns($this->component, $this->isExport),
-                new CommonPipelines\Summaries($this->component),
                 new Pipelines\Sorting($this->component),
             ])
             ->thenReturn();
@@ -42,6 +41,7 @@ class ModelProcessor extends DataSourceBase
         $paginate = app(Pipeline::class)
             ->send($query)
             ->through([
+                new CommonPipelines\Summaries($this->component),
                 new CommonPipelines\Pagination($this->component),
             ])
             ->thenReturn();

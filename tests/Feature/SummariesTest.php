@@ -58,3 +58,48 @@ it('computes a sum aggregate headlessly through the engine', function () {
         ->and((float) $context->getSummaryValues()['price.sum'])
         ->toBe((float) Dish::query()->sum('price'));
 });
+
+describe('summaries respect transformQuery scope', function () {
+    $scopedContext = fn (\Closure $datasource, \Closure $transform, array $setUp = []): ArrayGridContext => new ArrayGridContext(
+        state: State::fromArray([
+            'primaryKey' => 'id',
+            'tableName' => 'dishes',
+            'setUp' => array_merge(['footer' => ['perPage' => 100, 'pageName' => 'page']], $setUp),
+        ]),
+        datasourceResolver: $datasource,
+        fields: (new Fields())->add('id')->add('name')->add('price'),
+        columns: [columnWithSummarize('price', ['sum' => ['footer' => true]])],
+        transformQueryResolver: $transform,
+    );
+
+    it('on database sources', function () use ($scopedContext) {
+        $context = $scopedContext(fn () => Dish::query(), fn ($query) => $query->where('name', 'Pizza'));
+
+        ProcessDataSource::make($context)->get();
+
+        expect((float) $context->getSummaryValues()['price.sum'])->toBe(45.0);
+    });
+
+    it('on collection sources', function () use ($scopedContext) {
+        $context = $scopedContext(
+            fn () => Dish::query()->get()->map(fn (Dish $dish) => $dish->toArray()),
+            fn ($rows) => $rows->where('name', 'Pizza'),
+        );
+
+        ProcessDataSource::make($context)->get();
+
+        expect((float) $context->getSummaryValues()['price.sum'])->toBe(45.0);
+    });
+
+    it('in the cache tag, so cached totals never cross scopes', function () use ($scopedContext) {
+        $cache = ['cache' => ['enabled' => true, 'ttl' => 60]];
+        $pizza = $scopedContext(fn () => Dish::query(), fn ($query) => $query->where('name', 'Pizza'), $cache);
+        $sushi = $scopedContext(fn () => Dish::query(), fn ($query) => $query->where('name', 'Sushi'), $cache);
+
+        ProcessDataSource::make($pizza)->get();
+        ProcessDataSource::make($sushi)->get();
+
+        expect($pizza->summariesCacheTag())->not->toBe($sushi->summariesCacheTag())
+            ->and((float) $sushi->getSummaryValues()['price.sum'])->toBe(30.0);
+    });
+});
