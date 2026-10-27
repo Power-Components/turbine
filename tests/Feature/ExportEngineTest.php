@@ -1,8 +1,11 @@
 <?php
 
 use PowerComponents\Turbine\{Column, Fields};
+use PowerComponents\Turbine\Components\Filters\FilterInputText;
 use PowerComponents\Turbine\Export\ExportEngine;
 use PowerComponents\Turbine\Support\State\{ArrayGridContext, State};
+use PowerComponents\Turbine\Tests\Fixtures\Models\Dish;
+use PowerComponents\Turbine\Turbine;
 
 it('extracts export headers correctly from exportable columns', function () {
     $engine = new ExportEngine();
@@ -48,10 +51,21 @@ it('jails export file names to a basename under storage', function () {
         exportOptions: ['csvSeparator' => ',', 'csvDelimiter' => '"']
     );
 
-    expect($filePath)->toBe(storage_path('pwned.csv'))
+    $again = $engine->build(
+        context: $context,
+        exportType: 'csv',
+        fileName: '../../public/pwned',
+        exportOptions: ['csvSeparator' => ',', 'csvDelimiter' => '"']
+    );
+
+    expect($filePath)->toStartWith(storage_path('pwned-'))
+        ->and($filePath)->toEndWith('.csv')
+        ->and(dirname($filePath))->toBe(rtrim(storage_path(), DIRECTORY_SEPARATOR))
+        ->and($filePath)->not->toBe($again)
         ->and(file_exists($filePath))->toBeTrue();
 
     @unlink($filePath);
+    @unlink($again);
 });
 
 it('neutralizes formula injection strings', function () {
@@ -60,6 +74,8 @@ it('neutralizes formula injection strings', function () {
     expect($engine->neutralizeFormula('=SUM(A1:A10)'))->toBe("'=SUM(A1:A10)")
         ->and($engine->neutralizeFormula('+123'))->toBe("'+123")
         ->and($engine->neutralizeFormula('-123'))->toBe("'-123")
+        ->and($engine->neutralizeFormula(' =1+1'))->toBe("' =1+1")
+        ->and($engine->neutralizeFormula("\t=cmd"))->toBe("'\t=cmd")
         ->and($engine->neutralizeFormula('Normal Text'))->toBe('Normal Text');
 });
 
@@ -120,4 +136,55 @@ it('builds CSV file using export engine', function () {
         ->and($content)->toContain('2,Bob,User');
 
     @unlink($filePath);
+});
+
+describe('database export scoping', function () {
+    $exportGrid = fn (): Turbine => Turbine::make()
+        ->datasource(fn () => Dish::query())
+        ->fields((new Fields())->add('id')->add('name'))
+        ->columns([Column::make('Id', 'id'), Column::make('Name', 'name')])
+        ->filters([new FilterInputText('name')])
+        ->tableName('dishes');
+
+    $exportedNames = fn (Turbine $grid): array => collect(
+        (new ExportEngine())->prepareDataset($grid->context(), [])
+    )->pluck('name')->sort()->values()->all();
+
+    it('applies transformQuery', function () use ($exportGrid, $exportedNames) {
+        $grid = $exportGrid()->transformQuery(fn ($query) => $query->where('name', 'Pizza'));
+
+        expect($exportedNames($grid))->toBe(['Pizza']);
+    });
+
+    it('applies column raw queries', function () use ($exportedNames) {
+        $price = Column::make('Price', 'price');
+        $price->rawQueries = [['sql' => 'dishes.price > ?', 'bindings' => [25]]];
+
+        $grid = Turbine::make()
+            ->datasource(fn () => Dish::query())
+            ->fields((new Fields())->add('id')->add('name'))
+            ->columns([Column::make('Name', 'name'), $price])
+            ->tableName('dishes');
+
+        expect($exportedNames($grid))->toBe(['Pizza', 'Sushi']);
+    });
+
+    it('applies the filter builder', function () use ($exportGrid, $exportedNames) {
+        $grid = $exportGrid()
+            ->setUp([Turbine::filterBuilder()])
+            ->state(['filterBuilder' => [
+                'match' => 'and',
+                'rows' => [['column' => 'name', 'operator' => 'starts_with', 'value' => 'Pastel', 'boolean' => 'and']],
+            ]]);
+
+        expect($exportedNames($grid))->toBe(['Pastel de Belém', 'Pastel de Nata']);
+    });
+
+    it('still applies search and filters', function () use ($exportGrid, $exportedNames) {
+        $grid = $exportGrid()->state(['search' => 'Pastel', 'filters' => [
+            'name' => ['type' => 'input_text', 'value' => 'Nata', 'op' => 'contains'],
+        ]]);
+
+        expect($exportedNames($grid))->toBe(['Pastel de Nata']);
+    });
 });

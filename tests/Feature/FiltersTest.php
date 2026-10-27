@@ -2,8 +2,10 @@
 
 namespace PowerComponents\Turbine\Tests\Feature;
 
+use Illuminate\Support\Collection;
 use PowerComponents\Turbine\Components\Filters\{FilterBoolean, FilterInputText, FilterMultiSelect, FilterNumber, FilterSelect};
 use PowerComponents\Turbine\DataSource\ProcessDataSource;
+use PowerComponents\Turbine\DataSource\Processors\Collection\Pipelines\Filters as CollectionFilters;
 
 /**
  * Fixture (dishes): Sushi 30 in-stock, Pastel de Nata 10 in-stock,
@@ -49,6 +51,31 @@ it('ignores a filter type whose field is not declared', function () {
 it('reads a filter record with the type its definition declares', function () {
     expect(pgFilter('number', 'name', 'Sushi', [new FilterSelect('name')]))->toBe(1)
         ->and(pgFilter('select', 'price', ['start' => 30], [new FilterNumber('price')]))->toBe(2);
+});
+
+it('falls back to contains when the request operator is not allowed', function () {
+    $filter = (new FilterInputText('name'))->operators(['contains']);
+
+    $context = turbineContext(
+        statePayload: ['filters' => ['name' => ['type' => 'input_text', 'value' => 'Pastel', 'op' => 'is']]],
+        filters: [$filter],
+    );
+
+    expect(ProcessDataSource::make($context)->get()['results']->total())->toBe(2);
+
+    $rows = collect([
+        ['id' => 1, 'name' => 'Sushi'],
+        ['id' => 2, 'name' => 'Sushi Roll'],
+    ]);
+    $collectionContext = turbineContext(
+        statePayload: ['filters' => ['name' => ['type' => 'input_text', 'value' => 'Sushi', 'op' => 'is']]],
+        datasource: fn () => $rows,
+        filters: [$filter],
+    );
+
+    $filtered = (new CollectionFilters($collectionContext))->handle($rows, fn (Collection $collection) => $collection);
+
+    expect($filtered)->toHaveCount(2);
 });
 
 it('ignores a keyed filter value the declared type does not take', function () {

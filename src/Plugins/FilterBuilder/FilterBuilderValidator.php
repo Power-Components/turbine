@@ -92,11 +92,25 @@ final class FilterBuilderValidator
             /** @var string $columnTitle */
             $columnTitle = $titles->get($field, $titles->get($column, $field));
 
+            $operators = $operatorsByType[$type] ?? [];
+            $configured = data_get($definition, 'operators');
+
+            if (is_array($configured)) {
+                $configured = array_values(array_filter(
+                    $configured,
+                    fn (mixed $value): bool => is_string($value) && $value !== ''
+                ));
+
+                if ($configured !== []) {
+                    $operators = array_values(array_intersect($operators, $configured));
+                }
+            }
+
             $meta[$field] = [
                 'field' => $field,
                 'title' => $columnTitle,
                 'type' => $type,
-                'operators' => $operatorsByType[$type] ?? [],
+                'operators' => $operators,
                 'options' => self::optionsFor($definition),
                 'definition' => $definition instanceof FilterBase ? $definition : null,
             ];

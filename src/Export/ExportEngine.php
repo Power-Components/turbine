@@ -5,11 +5,12 @@ namespace PowerComponents\Turbine\Export;
 use Generator;
 use Illuminate\Database\Eloquent;
 use Illuminate\Database\Eloquent\{Builder, Model};
+use Illuminate\Pipeline\Pipeline;
 use Illuminate\Support\{Collection, LazyCollection, Str};
 use PowerComponents\Turbine\Components\SetUp\Exportable;
 use PowerComponents\Turbine\Contracts\Context;
 use PowerComponents\Turbine\DataSource\{DataTransformer, ProcessDataSource};
-use PowerComponents\Turbine\DataSource\Processors\Database\Handlers\{FilterHandler, SearchHandlerContract};
+use PowerComponents\Turbine\DataSource\Processors\Database\Pipelines;
 use PowerComponents\Turbine\DataSource\Support\Sql;
 use PowerComponents\Turbine\Export\Drivers\{CsvExporter, ExportDriverInterface, XlsExporter};
 
@@ -51,7 +52,7 @@ class ExportEngine
         }
 
         $ext = strtolower($exportType) === 'csv' ? 'csv' : 'xlsx';
-        $fullPath = storage_path($fileName.'.'.$ext);
+        $fullPath = storage_path($fileName.'-'.Str::uuid().'.'.$ext);
 
         $driver->build($fullPath, $headers, $rows, $exportOptions);
 
@@ -145,16 +146,18 @@ class ExportEngine
         /** @var array<string, mixed> $queryOptions */
         $queryOptions = (array) data_get($exportOptions, 'queryOptions', []);
 
+        // Same scoping as ModelProcessor, so the export never sees rows the grid hides.
         /** @var Builder<Model> $datasourceQuery */
-        $datasourceQuery = $processDataSource->datasource;
+        $datasourceQuery = app(Pipeline::class)
+            ->send($processDataSource->datasource)
+            ->through([
+                new Pipelines\Filters($context),
+                new Pipelines\SoftDeletes($context),
+                new Pipelines\ColumnRawQueries($context),
+            ])
+            ->thenReturn();
 
-        $results = $datasourceQuery
-            ->where(function ($query) use ($context) {
-                app()->makeWith(SearchHandlerContract::class, [
-                    'component' => $context,
-                ])->apply($query);
-                (new FilterHandler($context))->apply($query);
-            })
+        $query = $datasourceQuery
             ->when(! empty($filtered), function ($query) use ($property, $filtered) {
                 return $query->whereIn($property('primaryKey'), $filtered);
             })
@@ -180,8 +183,11 @@ class ExportEngine
                 $dir = in_array($sanitizedDirection, ['asc', 'desc'], true) ? $sanitizedDirection : 'asc';
 
                 return $query->orderBy($sortField, $dir);
-            })
-            ->cursor();
+            });
+
+        /** @var Builder<Model> $scoped */
+        $scoped = $context->transformQuery($query);
+        $results = $scoped->cursor();
 
         $dataTransformer = new DataTransformer($context);
 
@@ -248,13 +254,9 @@ class ExportEngine
 
     public function neutralizeFormula(string $value): string
     {
-        if ($value === '') {
-            return $value;
-        }
+        $probe = ltrim($value, " \t\r\n");
 
-        $first = $value[0];
-
-        if (in_array($first, ['=', '+', '-', '@', "\t", "\r"], true)) {
+        if ($probe !== '' && in_array($probe[0], ['=', '+', '-', '@'], true)) {
             return "'".$value;
         }
 

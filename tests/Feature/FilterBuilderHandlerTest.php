@@ -9,7 +9,8 @@ use PowerComponents\Turbine\Plugins\FilterBuilder\FilterBuilderHandler;
 use PowerComponents\Turbine\Support\State\{ArrayGridContext, State};
 use PowerComponents\Turbine\Tests\Fixtures\Models\Dish;
 
-function makeFilterBuilderContext(array $fbState = []): ArrayGridContext
+/** @param  array<int, FilterInputText|FilterNumber>|null  $filters */
+function makeFilterBuilderContext(array $fbState = [], ?array $filters = null): ArrayGridContext
 {
     return new ArrayGridContext(
         state: State::fromArray([
@@ -26,7 +27,7 @@ function makeFilterBuilderContext(array $fbState = []): ArrayGridContext
             Column::add()->title('Name')->field('name')->searchable(),
             Column::add()->title('Price')->field('price')->sortable(),
         ],
-        filters: [
+        filters: $filters ?? [
             new FilterInputText('name'),
             new FilterNumber('price'),
         ]
@@ -104,4 +105,21 @@ it('reads a text condition value as a single value', function () {
     (new FilterBuilderHandler($ctx))->apply($query);
 
     expect($query->toSql())->not->toContain('"name"."price"');
+});
+
+it('rejects an input text operator the developer did not allow', function () {
+    $ctx = makeFilterBuilderContext(
+        [
+            'match' => 'and',
+            'rows' => [
+                ['column' => 'name', 'operator' => 'is', 'value' => 'Sushi', 'boolean' => 'and'],
+            ],
+        ],
+        [(new FilterInputText('name'))->operators(['contains'])]
+    );
+
+    $query = Dish::query();
+    (new FilterBuilderHandler($ctx))->apply($query);
+
+    expect(strtolower($query->toSql()))->not->toContain('where');
 });
