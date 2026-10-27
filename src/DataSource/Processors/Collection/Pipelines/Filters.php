@@ -66,7 +66,7 @@ final class Filters
                 'boolean' => (new Boolean($this->component, $definition))->collection($results, $sqlField, FilterValue::map($value)),
                 'number' => (new Number($this->component, $definition))->collection($results, $sqlField, FilterValue::numberRange($value)),
                 'input_text' => (new InputText($this->component, $definition))->collection($results, $sqlField, [
-                    'selected' => $this->validateInputTextOptions($filters, $bagKey),
+                    'selected' => $this->validateInputTextOptions($filters, $bagKey, $this->resolveConfiguredOperators($definition)),
                     'value' => $value,
                 ]),
                 default => $results
