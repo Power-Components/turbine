@@ -4,6 +4,7 @@ namespace PowerComponents\Turbine\Support\State;
 
 use Closure;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 use PowerComponents\Turbine\{Button, Fields};
 use PowerComponents\Turbine\Components\Filters\FilterBase;
 use PowerComponents\Turbine\Components\Rules\BaseRule;
@@ -138,7 +139,7 @@ final class ArrayGridContext implements Context
         $suffix = (string) $principal;
 
         try {
-            $query = ($this->datasourceResolver)();
+            $query = $this->transformQuery(($this->datasourceResolver)());
 
             if ($query instanceof Builder) {
                 $query = $query->toBase();
@@ -146,6 +147,8 @@ final class ArrayGridContext implements Context
 
             if (is_object($query) && method_exists($query, 'toSql') && method_exists($query, 'getBindings')) {
                 $suffix .= '-'.hash('sha256', $query->toSql().'|'.serialize($query->getBindings()));
+            } elseif ($query instanceof Collection) {
+                $suffix .= '-'.hash('sha256', (string) json_encode($query->pluck($this->state->realPrimaryKey())->all()));
             }
         } catch (\Throwable) {
         }

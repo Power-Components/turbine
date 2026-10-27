@@ -60,11 +60,13 @@ class CollectionProcessor extends DataSourceBase
                 new Pipelines\GlobalSearch($this->component),
                 new Pipelines\Filters($this->component),
                 new Pipelines\Sorting($this->component),
-                new CommonPipelines\Summaries($this->component),
             ])
             ->thenReturn();
 
-        $results = $this->component->transformQuery($results);
+        $results = app(Pipeline::class)
+            ->send($this->component->transformQuery($results))
+            ->through([new CommonPipelines\Summaries($this->component)])
+            ->thenReturn();
 
         /** @var BaseCollection<int, mixed> $results */
         $paginated = $results;
