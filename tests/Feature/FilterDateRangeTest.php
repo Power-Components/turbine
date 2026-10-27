@@ -32,3 +32,15 @@ it('keeps the picked time for datetime type', function () {
     expect(Carbon::parse($range['start'])->format('Y-m-d H:i'))->toBe('2026-01-01 08:30')
         ->and(Carbon::parse($range['end'])->format('Y-m-d H:i'))->toBe('2026-01-02 17:45');
 });
+
+it('converts a range picked in another timezone to the app timezone', function () {
+    config()->set('app.timezone', 'UTC');
+
+    $date = FilterDateRange::compute('date', '2026-10-26', 'America/Sao_Paulo');
+    $datetime = FilterDateRange::compute('datetime', '2026-10-26 08:30 to 2026-10-26 17:45', 'America/Sao_Paulo');
+
+    expect(Carbon::parse($date['start'])->utc()->format('Y-m-d H:i:s'))->toBe('2026-10-26 03:00:00')
+        ->and(Carbon::parse($date['end'])->utc()->format('Y-m-d H:i:s'))->toBe('2026-10-27 02:59:59')
+        ->and(Carbon::parse($datetime['start'])->utc()->format('Y-m-d H:i'))->toBe('2026-10-26 11:30')
+        ->and(Carbon::parse($datetime['end'])->utc()->format('Y-m-d H:i'))->toBe('2026-10-26 20:45');
+});
