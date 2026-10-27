@@ -132,7 +132,7 @@ class ExportEngine
             return $dataTransformer->transform($collection)->collection;
         }
 
-        $currentTable = method_exists($context, 'currentTable') ? $context->currentTable() : $state->tableName;
+        $currentTable = $context->getCurrentTable() ?: $state->tableName;
 
         $property = function (string $prop) use ($context, $currentTable) {
             $value = $prop === 'primaryKey' ? $context->state()->primaryKey : data_get($context, $prop);

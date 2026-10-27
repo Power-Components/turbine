@@ -187,4 +187,19 @@ describe('database export scoping', function () {
 
         expect($exportedNames($grid))->toBe(['Pastel de Nata']);
     });
+
+    it('scopes selected rows by the datasource table, not the component table name', function () {
+        $grid = Turbine::make()
+            ->datasource(fn () => Dish::query())
+            ->fields((new Fields())->add('id')->add('name'))
+            ->columns([Column::make('Id', 'id'), Column::make('Name', 'name')])
+            ->tableName('dishTable');
+
+        $ids = Dish::query()->whereIn('name', ['Pizza', 'Sushi'])->pluck('id')->all();
+
+        $names = collect((new ExportEngine())->prepareDataset($grid->context(), ['selectedKeys' => $ids], selected: true))
+            ->pluck('name')->sort()->values()->all();
+
+        expect($names)->toBe(['Pizza', 'Sushi']);
+    });
 });
