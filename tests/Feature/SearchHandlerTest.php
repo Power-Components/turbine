@@ -6,7 +6,9 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use PowerComponents\Turbine\{Column, Fields};
 use PowerComponents\Turbine\DataSource\Processors\Database\Handlers\SearchHandler;
+use PowerComponents\Turbine\DataSource\Processors\Database\Pipelines\ColumnRawQueries;
 use PowerComponents\Turbine\Support\State\{ArrayGridContext, State};
+use PowerComponents\Turbine\Tests\Fixtures\Models\Dish;
 
 class SearchOwner extends Model
 {
@@ -54,4 +56,22 @@ it('keeps relation search inside the datasource where', function () {
 
     expect($sql)->toContain('and ("search_owners"."name" like ? or exists')
         ->and($sql)->not->toContain('like ?) or exists');
+});
+
+it('keeps orWhere raw queries inside the datasource where', function () {
+    $name = Column::make('Name', 'name');
+    $name->rawQueries = [['method' => 'orWhereRaw', 'sql' => 'dishes.name LIKE ?', 'bindings' => ['%sushi%']]];
+
+    $context = new ArrayGridContext(
+        state: State::fromArray(['search' => 'sushi', 'primaryKey' => 'id', 'tableName' => 'dishes']),
+        datasourceResolver: fn () => Dish::query(),
+        fields: (new Fields())->add('id')->add('name'),
+        columns: [$name],
+    );
+
+    $query = Dish::query()->where('in_stock', true);
+    (new SearchHandler($context))->apply($query);
+    (new ColumnRawQueries($context))->handle($query, fn ($query) => $query);
+
+    expect(strtolower($query->toSql()))->toBe('select * from "dishes" where "in_stock" = ? and (dishes.name like ?)');
 });

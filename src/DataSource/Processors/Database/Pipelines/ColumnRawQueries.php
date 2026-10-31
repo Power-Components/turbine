@@ -23,16 +23,24 @@ class ColumnRawQueries
             return $next($query);
         }
 
-        collect($this->component->declaredColumns())
-            ->filter(fn ($column) => filled(data_get($column, 'rawQueries')))
-            ->each(function ($column) use ($query) {
-                foreach ((array) data_get($column, 'rawQueries', []) as $rawQueryConfig) {
-                    /** @var array<string, mixed> $rawQueryConfig */
-                    $this->executeRawQuery($query, $rawQueryConfig);
-                }
-            });
+        $this->apply($query, grouped: false);
 
         return $next($query);
+    }
+
+    public function apply(mixed $query, bool $grouped): void
+    {
+        collect($this->component->declaredColumns())
+            ->each(function ($column) use ($query, $grouped) {
+                foreach ((array) data_get($column, 'rawQueries', []) as $rawQueryConfig) {
+                    /** @var array<string, mixed> $rawQueryConfig */
+                    $method = data_get($rawQueryConfig, 'method', 'whereRaw');
+
+                    if (is_string($method) && str_starts_with($method, 'orWhere') === $grouped) {
+                        $this->executeRawQuery($query, $rawQueryConfig);
+                    }
+                }
+            });
     }
 
     /** @param  array<string, mixed>  $rawQueryConfig */

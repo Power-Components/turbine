@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\{Builder as EloquentBuilder, Model, RelationNot
 use Illuminate\Database\Query\{Builder as QueryBuilder, JoinClause};
 use PowerComponents\Turbine\Column;
 use PowerComponents\Turbine\Contracts\Context;
+use PowerComponents\Turbine\DataSource\Processors\Database\Pipelines\ColumnRawQueries;
 use PowerComponents\Turbine\DataSource\Support\Sql;
 use PowerComponents\Turbine\Support\SchemaInspector;
 use stdClass;
@@ -66,6 +67,8 @@ class SearchHandler implements SearchHandlerContract
             if ($hasRelationSearch && $subQuery instanceof EloquentBuilder && $query instanceof EloquentBuilder) {
                 $this->filterRelation($subQuery, $query, $search);
             }
+
+            (new ColumnRawQueries($this->component))->apply($subQuery, grouped: true);
         });
 
         return $query;

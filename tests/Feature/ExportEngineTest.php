@@ -169,6 +169,24 @@ describe('database export scoping', function () {
         expect($exportedNames($grid))->toBe(['Pizza', 'Sushi']);
     });
 
+    it('keeps orWhere raw queries inside the datasource constraints', function () use ($exportedNames) {
+        $name = Column::make('Name', 'name');
+        $name->rawQueries = [[
+            'method' => 'orWhereRaw',
+            'sql' => 'dishes.name LIKE ?',
+            'bindings' => [fn ($context) => '%'.$context->state()->search.'%'],
+        ]];
+
+        $grid = Turbine::make()
+            ->datasource(fn () => Dish::query()->where('in_stock', false))
+            ->fields((new Fields())->add('id')->add('name'))
+            ->columns([Column::make('Id', 'id'), $name])
+            ->tableName('dishes')
+            ->state(['search' => 'Pastel']);
+
+        expect($exportedNames($grid))->toBe(['Pastel de Belém']);
+    });
+
     it('applies the filter builder', function () use ($exportGrid, $exportedNames) {
         $grid = $exportGrid()
             ->setUp([Turbine::filterBuilder()])
