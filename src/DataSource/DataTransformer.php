@@ -33,6 +33,8 @@ final class DataTransformer
         $collectActions = $this->component->shouldCollectActions();
 
         $transformedCollection = $collection->map(function ($row, $index) use ($loopInstance, &$actionsByRow, $collectActions) {
+            $loopInstance->incrementLoopIndices();
+
             $rowObject = (object) $row;
 
             $transformedData = $this->rowTransformer->transform($rowObject);
@@ -59,6 +61,8 @@ final class DataTransformer
 
             return $transformedData;
         });
+
+        $loopInstance->popLoop();
 
         /** @var array<int|string, list<array<string, mixed>>> $actionsByRow */
         /** @var BaseCollection<int, mixed> $transformedCollection */

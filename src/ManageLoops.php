@@ -72,10 +72,4 @@ class ManageLoops
 
         return $last !== null ? (object) $last : null;
     }
-
-    /** @return list<LoopEntry> */
-    public function getLoopStack(): array
-    {
-        return $this->loopsStack;
-    }
 }
