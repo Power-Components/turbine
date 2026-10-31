@@ -16,6 +16,7 @@ use PowerComponents\Turbine\Components\Rules\Support\{
     HideRule,
     SlotRule
 };
+use PowerComponents\Turbine\DataSource\DataTransformer;
 
 it('instantiates rules via RuleManager and manages modifiers', function () {
     $manager = new RuleManager();
@@ -137,4 +138,27 @@ it('applies Support rules', function () {
 
     $slotRule = new SlotRule();
     expect($slotRule->apply('New Label'))->toBe(['slot' => 'New Label']);
+});
+
+it('advances the loop per row so loop rules apply to the right rows', function () {
+    $rows = collect([
+        ['id' => 1, 'name' => 'a', 'price' => 1, 'in_stock' => true],
+        ['id' => 2, 'name' => 'b', 'price' => 2, 'in_stock' => true],
+        ['id' => 3, 'name' => 'c', 'price' => 3, 'in_stock' => true],
+    ]);
+
+    $loops = (new DataTransformer(turbineContext()))
+        ->transform($rows)
+        ->getCollection()
+        ->pluck('__turbine_loop');
+
+    $applies = fn (RuleRows $rule) => $loops->map(fn ($loop) => $rule->rule['loop']($loop))->all();
+
+    expect($applies((new RuleRows())->firstOnPage()))->toBe([true, false, false])
+        ->and($applies((new RuleRows())->lastOnPage()))->toBe([false, false, true])
+        ->and($applies((new RuleRows())->alternating()))->toBe([false, true, false])
+        ->and($loops->pluck('index')->all())->toBe([0, 1, 2])
+        ->and($loops->pluck('iteration')->all())->toBe([1, 2, 3])
+        ->and($loops->pluck('remaining')->all())->toBe([2, 1, 0])
+        ->and($loops->pluck('odd')->all())->toBe([true, false, true]);
 });
